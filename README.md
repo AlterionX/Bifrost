@@ -1,193 +1,82 @@
-# Bifrost RegEx, Lexer, and Parser Generator
+# Bifrost RegEx, Lexer, and Parser #
 
+## Summary ##
 
-##General theory
+This compilation engine aims to take in a set of configuration files for a language, and then compile assembly code for the language to be recompiled through an assembler.
 
-This compiler-compiler breaks the process of compiling into seven separate stages, lexical analysis, syntactic analysis, global (structural) semantics analysis, local semantics analysis, intermediate code generation, intermediate code optimization, machine code generation and machine code optimization.
+Due to heavy use of lambda expressions in certain areas of the project, this requires Java 8. The sample project located in the tyrion subdirectory does not compile, however it can generate a full syntax tree and modify a limited subset into three-address code.
+
+My apologies for the names.
+
+## General Structure ##
+
+* The engine symbol table: `Yggdrasil`
+* The lexer: `Helvegar`
+  * The regex engine: `Bragi`
+* The parser: `Jormungandr`
+* The AST: `Yggdrasil`
+  * The tree walker interface(abstract class): `Stag`
+* The semantics analysis: `Heimdallr`
+  * The symbol table: `Nidhogg`
+  * User provided extensions of `Stag`
+  * Intermediate code generator: `Hoenir`
+* Assembly compiler: `Surtr`
+* Assembler caller: `Idavoll`
+
+The one class that inherently ties everything together is `Yggdrasil`. This is the basis of all the classes.
+
+## General theory and Project Status ##
+
+This compiler breaks the process of compiling into seven separate stages, lexical analysis, syntactic analysis, global (structural) semantics analysis, local semantics analysis, intermediate code generation, intermediate code optimization, machine code generation and machine code optimization.
 
 These can be further, loosely, categorized into the lexical, syntactic, semantic, and machine analysis stages.
 
-## Usage
+Currently implemented: simple regular expression engine, regular expression based lexer, simple SLR parser table generator, simple SLR parser, multiple symbol tables, for the engine and for the program being compiled. There is an interface for tree walking, with dynamically compiled Java classes available through configuration. Tree modification at parsing time.
 
-###RegEx Engine
+Of the seven stages, the first four are at a basic, working standard, provided well-formatted configuration files.
 
-The command line interface Bragi is available for testing RegEx with the engine, to ensure a match. Unfortunately, Bragi does not take multi-line inputs, and will not search an entire String.
+Being worked on: Parser and Lexer serialization, syntatic and semantic analysis engine, simple intermediate code optimization engine, simple machine code optimization engine.
 
-###Lexer
+Future goals: LALR, LR parsing, a general fall back algorithm (Earley, CYK, etc.). Fully working sample project. Type-checking engine. Advanced versions of the other componenets. Alternative and extended input formats. Support literals within the context free grammar parser. Standardization of input formats. Improved performance.
+
+Project on hold for various IRL issues.
+
+## Usage ##
+
+### Auxilary file list ###
+
+|File extension |Engine target |Meaning                                |
+|---------------|--------------|---------------------------------------|
+|`.lexdec`      |`Helvegar`    |Lexer declaration                      |
+|`.pardec`      |`Jormungandr` |Parser declaration                     |
+|`.anadec`      |`Heimdallr`   |Analyzer declaration                   |
+|`.scrdec`      |`ScopeChanger`|Scope resolution declaration           |
+|`.irldec`      |`Hoenir`      |Intermediate Machine Format declaration|
+|`.mltdec`      |`Surtr`       |Machine type, class, info declaration  |
+|`.asmrcall`    |`Idavoll`     |Assembler caller                       |
+
+### RegEx Engine ###
+
+The command line interface `Bragi` is available for testing RegEx with the engine, to ensure a match. Unfortunately, `Bragi` does not take multi-line inputs, and will not search an entire `String`. The fix for the second is quick, but the first will take a little longer.
+
+### Lexer ###
 
 The Lexer takes a single file name `target.lexdec`. It is in another section. It will, in effect, take symbols and regex representations of those symbols, passing them onwards to the parser. The symbols will be added as terminals to the list of symbols.
 
-###Parser
+### Parser ###
 
 The Lexer takes a single file name `target.pardec` as the configuration file. This file's format is listed below. In brief, it will contain a CFG written in some format as well as additional commands for the parse tree builder. It will use symbols listed in the lexer's declaration as terminals, and any new tokens, as defined below, to be non-terminals.
 
-###Semantic Analyzer
+### Semantic Analyzer ###
 
-The Semantic Analyzer shall take two separate files, one being `passOne.semdec`, the second being `passTwo.semdec`. `passOne.semdec` will detail the construction of the symbol table through a second traversal through the AST, while `passTwo.semdec` will take the symbol table and AST and convert them to a intermediate machine language.
+There are two components, one for user modification of the tree and symbol table, another for translation into intermediate code representation. Both traverse the AST by utilizing the `Stag` interface.
 
-This will most likely not be done by the time the project is due.
+The first can have its behavior modified by the `target.anadec` file and corresponding tree walkers. The second component utilizes the `target.irldec` file to define an intermediate language. `target.scrdec` is used to control stepping through scopes within the AST.
 
-###Machine Language Translator
+### Machine Language Translator ###
 
-hahaha. I don't think this is going to be done anytime soon.
+Hahaha. I don't think this is going to be done anytime soon. It's being worked on.
 
+## License ##
 
-## Structure
-
-
-### Data management
-
-#### Yggdrasil
-
-The AST structure of the parser. This is populated and modified during the parsing stage. It will be reference throughout the analytic stage.
-
-#### Nidhogg
-
-The symbol table of the parser. This is only populated after parsing, during the first analytic stage.
-
-### RegEx (Bragi)
-
-This has a simple interface for RegEx verification, as well as some simple analysis.
-
-#### SkaldComponent
-
-This is the core of the RegEx engine. The initial, recursive, breakdown of the RegEx utilizes these components to become sufficient.
-
-#### Skald
-
-Meaning poet, it is a surprisingly fitting name for the main body of the RegEx engine. It parses input RegEx and sends it off to various other SkaldComponents to be handled and returned.
-
-#### Stef
-
-These are the nodes of the DFAs and NFAs generated by Skald after it finishes parsing through the RegEx. These do a surprisingly large quantity of tasks, one of which is to handle lookarounds. They can be augmented to handle captures and backtracking.
-
-#### Lausavisa
-
-The NFA of the RegEx engine. A fitting name for the disconnectedness (or overconnectedness) of NFAs, it represents a single, long winded, but far shorter version of the DFA. 
-
-#### Drottkvaet
-
-The staple stanza of the Drapa, it is a series of states interspersed with computing. It holds the structure of the RegEx DFA.
-
-
-### Lexer (Niflheim)
-
-#### Hel
-
-Hel manages the lexers, generating them and matching the input with the lexers, selecting the best (first) match. It will pass these back to Helvegar.
-
-#### Helvegar
-
-The public interface of the Lexer. All constructing from non-package sources will use Helvegar to produce the lexer.
-
-
-### Parser (Midgard)
-
-#### Jormungandr
-
-The main parser front end. Incoming communication will be filtered through Jormungandr. It also manages the data state of the parser, making requests of Skadi.
-
-#### Skadi
-
-This manages the rules back end and generates the parsing tables. It will initialize the various grammar constructs used.
-
-#### CFG
-
-The managers of the context free language. While Skadi manages the traffic between the two and Jormungandr deals with the queries, this one does all the work.
-
-
-### Analyzer (Asgard)
-
-####Heimdallr
-
-The guard of Asgard, this also checks the semantic meanings behind the provided texts, modifying the symbol table Nidhogg, and finalizing the grammar before it can be compiled into intermediate code.
-
-####Hoenir
-
-This being is said to have given meaning to man, and so will give meaning to the program. It traverses the AST, composing the final intermediate code. Optimization will also be dealt with by this Class.
-
-
-##Specifications
-
-### Regex limitations
-
-Back references are not yet be supported.
-
-The full list of operations supported:
-
-* Dot operator: Matches any character</li>
-* Character Sets: A set of characters</li>
-* Negated sets: A negated set of characters
-* Ranged sets: A range. These can be scattered liberally, and will include all letters that the alphabet places between the two letters. For example, if your alphabet were `ABCDEFGHIJKLMNOZPQRSTUVWXY`, the set `\[A-Z\]` will encompass `ABCDEFGHIJKLMNOZ`, but not `PQRSTUVWXY`
-* Lookarounds: Checks after a regex match if the regex is valid
-  * Positive lookahead: only matches if the regex provided is matched immediately after the first match
-  * Negative lookahead: only matches if the regex provided is not matched immediately after the first match
-  * Positive lookbehind: only matches if the regex provided is matched immediately before the first match
-  * Negative lookbehind: only matches if the regex provided is not matched immediately before the first match
-  
-   Lookbehinds are implemented by flipping the regex and analyzing the text in reverse order.
-* Kleene Star: A zero or more repetition
-* Presence: A zero or one occurence
-* Kleene Plus: A one or more repetition
-* Bracketed repetition: A repetition of the form `{n}`, `{n,m}`, or `{n,}`, representing `n` repetitions, `n` to `m` repetitions, and more than `n` repetitions of the preceding regex
-* Union operator: One regex or another
-
-The leftmost column is precedence.
-
-|  P  |        Regex       |         Syntax          |
-|:---:|:------------------:|:-----------------------:|
-|  0  |Dot operator        |`.`                      |
-|  0  |Character Sets      |`[abc]`                  |
-|  0  |Negated sets        |`[^abc]`                 |
-|  0  |Ranged sets         |`[a-c]`                  |
-|  0  |Positive lookahead  |`(?=a)`                  |
-|  0  |Positive lookbehind |`(?<=a)`                 |
-|  0  |Negative lookahead  |`(?!a)`                  |
-|  0  |Negative lookbehind |`(?<!a)`                 |
-|  1  |Kleene Star         |`a*`                     |
-|  1  |Plus                |`a+`                     |
-|  1  |Presence            |`a?`                     |
-|  1  |Bracketed repetition|`a{1,2}`                 |
-|  2  |Union operator      | <code>a&#124;b</code>   |
-
-### Lexer declaration file format
-
-The lexer definition file will be named "`compiler name`.lexdec".
-
-There exists predefined alphabets, as follows:
-
-|  Name:  |Alphabet characters|
-|---------|-------------------|
-|`DEFAULT`|<code>\t\n\r !\"#$%&'()*+,-./<br >0123456789<br >:;<=>?@<br >ABCDEFGHIJKLMNOPQRSTUVWXYZ<br >[\\]^_`<br >abcdefghijklmnopqrstuvwxyz<br >{&#124;}~</code>|
-
-Note that `\n`, `\t`, and `\r` are stand ins for newline, tab, and carriage return.
-
-As Unicode is not supported, this is the only truly necessary alphabet. Another alphabet is needed only if you need to make the system more restrictive, or to modify the way range works in the regex system.
-
-Lines after are listed as such `TOKEN_NAME: "token regex"` where the token regex stands for the regex used to match the said token.
-
-Note that the token name can only be composed of the characters `A-Z_`, following the regex `[A-Z][A-Z_]*`.
-
-Some rules will begin with a `%`. These are command rules. The remainder of the rule shall follow the same syntax analysis as the token rules.
-
-Comments can only be on their own lines and shall be prefixed with `#`. Empty lines are ignored.
-
-So each full rule can be parsed with the rather simplistic regex `(%?[A-Z]+: [^\n]*\n)|(#[^\n]*\n)`.
-
-To resolve ambiguity in token matching, the FIRST rule that results in a match will be used.
-
-### Parser declaration file format
-
-The parser will build an AST tree, but only an AST tree and nothing else. It will allow for expansion and shrinking of the tree in the format.
-
-It will take in rules of the SBNF format, or Simplified Backus-Naur Format. The format, as well as methods of node manipulation, are described below. More formats have been in the works, but only SBNF works for now.
-
-#### Simplified Backus-Naur Form
-
-Rules can span only a single line, and may consist of a series of command tokens interspersed with normal variable tokens. Command tokens begin with a `%`, and any arguments are `:` delimited. Every token must be white-space delimited.
-
-More specifically, each rule is begun by a single `TOKEN` followed by a single `->`. Each right hand side will consist of a simple series of `TOKEN`s, interspersed with `CMD_TOKEN`s. The regex for matching a `TOKEN` is `[A-Z_]+`, while the `CMD_TOKEN`s are matched by `%[A-Z_]+(:[A-Z0-9_])*`. A single rule, therefore, is matched by `([A-Z_]+[\t\r ]+->((%[A-Z_]+(:(([A-Z0-9_]+)|(-?[0-9]+)))*)|([A-Z_]+))+)(?=\n|$)`. Additional comments may be made by utilizing a `#` at the beginning of a line, matched by `[\n\t\r ]*#[^\n]*(?=\n|$)`
-
-Additional parser configuration rules are available. These must be set at the start of the first non-empty line of the file, as well as being in the exact order as listed, barring ones that were left out. The available parser configuration rules are as follows: `>PARSER_CLASS` and `>GRAMMAR_TYPE`. These maybe followed by \[`LR0`, `SLR`, `LALR`, `LR1`, and `GLR`\] or \[`SBNF`, `BNF`, `EBNF`, `CNF`, `CFG`\], respectively. However, only `LR0`, `SLR`, and `SBNF` are supported.
-
-### Semantic Analyzer declaration file format
+This is licensed under the MIT license. See LICENSE.md.
