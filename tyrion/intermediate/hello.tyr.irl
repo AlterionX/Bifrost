@@ -1,0 +1,11 @@
+#Intermediate Representation Generation
+__F_hello0:
+stack 8 -> x
+_v0 = 5 * 50
+_v1 = 79 + 1
+_v2 = 6 * _v1
+_v3 = _v0 + _v2
+_v4 = 0 - 50
+_v5 = _v3 - _v4
+x <- _v5
+return

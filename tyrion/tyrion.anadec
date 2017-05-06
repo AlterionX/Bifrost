@@ -1,0 +1,7 @@
+PATH=walkers
+
+TypeDeclStag
+FuncDeclStag
+VarDeclStag
+TypeCheckStag
+ConstantifyStag

@@ -1,0 +1,244 @@
+>./intermediate/%s.irl
+
+/DECODE PRGM
+    /CATCHALL
+
+        %F :
+        %OUTPUT
+
+    /END
+/END
+/DECODE FUNC_SEQ
+    /CATCHALL
+
+        %F :
+        %OUTPUT
+
+    /END
+/END
+/DECODE FUNC_DEC
+    /CATCHALL
+
+        %F :
+
+        __F_%0%GEF:
+        %OUTPUT
+        return
+
+    /END
+/END
+/DECODE FUNC_CALL
+    /CATCHALL
+
+        %F:
+        ::TODO
+
+    /END
+/END
+/DECODE SEQ
+    /CATCHALL
+
+        %F :
+        %OUTPUT
+
+    /END
+/END
+/DECODE STMT
+    /CATCHALL
+
+        %F :
+        %OUTPUT
+
+    /END
+/END
+/DECODE VAR_ACCSS
+    /CATCHALL
+
+        %F : %0
+        %OUTPUT
+
+    /END
+    /COND 1 L_BRACK
+
+        %F : %1
+        %OUTPUT
+
+    /END
+/END
+/DECODE VAR_DEC
+    /COND 1 L_BRACK
+
+        %F : %4
+        stack %0 * %2 -> %F
+        %OUTPUT
+
+    /END
+    /CATCHALL
+
+        %F : %1
+        stack %SYM_PROPERTY:%0:type:sizeof% -> %F
+        %OUTPUT
+
+    /END
+/END
+/DECODE ASSIGNMENT
+    /CATCHALL
+
+        %F :
+        %OUTPUT
+        %0 <- %1
+
+    /END
+/END
+/DECODE EXPR
+    /CATCHALL
+
+        %F : %0
+        %OUTPUT
+
+    /END
+/END
+/DECODE BOOL
+    /COND 1 BOOL_EQ
+
+        %F : _v%GEN
+        %OUTPUT
+        %F = %0 == %2
+
+    /END
+    /COND 1 BOOL_NEQ
+
+        %F : _v%GEN
+        %OUTPUT
+        %F = %0 != %2
+
+    /END
+    /CATCHALL
+
+        %F : %0
+        %OUTPUT
+
+    /END
+/END
+
+/DECODE SUMS
+    /COND 1 MINUS
+
+        %F : _v%GEN
+        %OUTPUT
+        %F = %0 - %2
+
+    /END
+    /COND 1 PLUS
+
+        %F : _v%GEN
+        %OUTPUT
+        %F = %0 + %2
+
+    /END
+    /CATCHALL
+
+        %F : %0
+        %OUTPUT
+
+    /END
+/END
+/DECODE COMP
+    /COND 1 BOOL_GT
+
+        %F : _v%GEN
+        %OUTPUT
+        %F = %0 > %2
+
+    /END
+    /COND 1 BOOL_LT
+
+        %F : _v%GEN
+        %OUTPUT
+        %F = %0 > %2
+
+    /END
+    /COND 1 BOOL_GEQ
+
+        %F : _v%GEN
+        %OUTPUT
+        %F = %0 >= %2
+
+    /END
+    /COND 1 BOOL_LEQ
+
+        %F : _v%GEN
+        %OUTPUT
+        %F = %0 <= %2
+
+    /END
+    /CATCHALL
+
+        %F : %0
+        %OUTPUT
+
+    /END
+/END
+/DECODE PROD
+    /COND 1 MULT
+
+        %F : _v%GEN
+        %OUTPUT
+        %F = %0 * %2
+
+    /END
+    /COND 1 DIVI
+
+        %F : _v%GEN
+        %OUTPUT
+        %F = %0 / %2
+
+    /END
+    /CATCHALL
+
+        %F : %0
+        %OUTPUT
+
+    /END
+/END
+/DECODE BASE
+    /CATCHALL
+
+        %F : %0
+        %OUTPUT
+
+    /END
+/END
+/DECODE NAME
+    /CATCHALL
+
+        %F : %~
+        %OUTPUT
+
+    /END
+/END
+/DECODE NUMBER
+    /CATCHALL
+
+        %F : %~
+        %OUTPUT
+
+    /END
+/END
+/DECODE FUNC_CALL
+    /CATCHALL
+
+        %F : %1(%1)
+        %OUTPUT
+
+    /END
+/END
+/DECODE NEG_NUM
+    /CATCHALL
+
+        %F : _v%GEN
+        %OUTPUT
+        %F = 0 - %1
+
+    /END
+/END

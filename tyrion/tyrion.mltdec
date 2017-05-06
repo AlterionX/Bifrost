@@ -1,0 +1,134 @@
+x86-64 GAS syntax
+
+#Start with REGS, PROPERTY, NAME, and IRL_OP
+
+::REGS:: 8
+::PROPERTY ALL:: save order: 1, 2, 3, 4, 5, 6, 7, 8
+::PROPERTY 1:: accumulator
+::PROPERTY 2:: counter
+::PROPERTY 3:: data
+::PROPERTY 4:: base
+::PROPERTY 5:: stackpointer
+::PROPERTY 6:: basepointer
+::PROPERTY 7:: sourceindex
+::PROPERTY 8:: destinationindex
+::PROPERTY 1:: accumulator
+::PROPERTY 2:: counter
+::PROPERTY 3:: data
+::PROPERTY 4:: base
+::PROPERTY 5:: stackpointer
+::PROPERTY 6:: basepointer
+::PROPERTY 7:: sourceindex
+::PROPERTY 8:: destinationindex
+::NAME 1:: rax
+::NAME 2:: rcx
+::NAME 3:: rdx
+::NAME 4:: rbx
+::NAME 5:: rsp
+::NAME 6:: rbp
+::NAME 7:: rsi
+::NAME 8:: rdi
+
+::SAVE_REG::
+PUSH %0
+::SAVE_REG::
+::ENTRY_POINT::
+__F_hello0
+::ENTRY_POINT::
+::ENTRY_LABEL::
+main
+::ENTRY_LABEL::
+
+#Define additional locations for substitution, with different names, matching the IRL_OP
+::IRL_OP_CONV::
+#register operations
+ADD: %REG_VAR = %REG_VAR + %REG_VAR
+MUL: %REG_VAR = %REG_VAR * %REG_VAR
+SUB: %REG_VAR = %REG_VAR - %REG_VAR
+DIV: %REG_VAR = %REG_VAR / %REG_VAR
+#Ensure variable is saved for future use
+STO: %SAVED_VAR <- %REG_VAR
+MRT: stack %NUM -> %SAVED_VAR
+#jumping and labels
+LBL: %0:
+RET: return
+::IRL_OP_CONV::
+
+#Details about how to handle each, with given actions of ASSIGN_R, ASSIGN_M
+#These just assigns registers and memory locations
+#ASSIGN_M also takes a single value, for quantity
+
+::IRL_OP_DEC::
+/INSTR: ADD
+    %ASSIGN_R %0
+    MOV %1, %0
+    ADD %1, %0
+/INSTR: MUL
+    %ASSIGN_R %0
+    PUSH rax
+    MOV %1, rax
+    MUL %2
+    MOV rax, %0
+    POP rax
+/INSTR: SUB
+    %ASSIGN_R %0
+    MOV %1, %0
+    SUB %0, %2
+/INSTR: DIV
+    %ASSIGN_R %0
+    PUSH rax
+    PUSH rdx
+    MOV %1, rax
+    DIV %2
+    MOV rax, %0
+    POP rdx
+    POP rax
+/INSTR: MOD
+    %ASSIGN_R %0
+    PUSH rax
+    PUSH rdx
+    MOV %1, rax
+    DIV %2
+    MOV rdx, %0
+    POP rdx
+    POP rax
+/INSTR: STO
+    PUSH rax
+    MOV %1, rax
+    MOV [%MEM:%0], rax
+    POP rax
+/INSTR: MRT
+    %ASSIGN_M %0 %1
+/INSTR: LBL
+.L_%0:
+/INSTR: RET
+    RET
+::IRL_OP_DEC::
+
+#Interpreting variables.
+
+::REG_VAR::
+[0-9_]+ :::: $%0
+_.* :::: FETCH_R
+[^_].* :::: FETCH_R
+::REG_VAR::
+::SAVED_VAR::
+
+::SAVED_VAR::
+
+::LABEL::
+LABEL .*
+::LABEL::
+
+::FUNC_RETURN::
+RETURN return
+::FUNC_RETURN::
+
+::DATA::
+.Data
+::DATA::
+
+::CODE::
+.text
+::CODE::
+

@@ -1,0 +1,4 @@
+#ignore intellij files
+.idea
+Bifrost.iml
+out/
