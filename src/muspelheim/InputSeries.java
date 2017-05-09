@@ -1,59 +1,86 @@
 package muspelheim;
 
+import bragi.Skald;
+import muspelheim.ruletypes.InputRule;
+import muspelheim.ruletypes.InputRuleType;
+import niflheim.Hel;
+
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class InputSeries {
-    private List<String> series = new ArrayList<>();
+    private List<InputRule> rules = new ArrayList<>();
     private String seriesName;
-    private InputSeries() {}
-    public static List<InputSeries> fetchSeries(List<String> input) {
+
+    private static String singleLineRuleRegEx = "::/[A-Z]*-[A-Z_]+::[^\\n]+\\n?";
+    private static String multiLineRuleRegEx = "::/[A-Z]*-[A-Z_]+::.(.:|.)*::/END-[A-Z_]+::\\n?";
+    private static String rulePrefixRegEx = "/[A-Z]+-";
+
+    public InputSeries(String input) {
         List<InputSeries> list = new ArrayList<>();
+        Skald singleLineRegex = new Skald(singleLineRuleRegEx, Hel.DEFAULT_ALPH);
+        singleLineRegex.compile();
+        Skald multiLineRegex = new Skald(multiLineRuleRegEx, Hel.DEFAULT_ALPH);
+        multiLineRegex.compile();
+        Skald rulePrefixRegex = new Skald(rulePrefixRegEx, Hel.DEFAULT_ALPH);
+        rulePrefixRegex.compile();
+
+        List<InputRule> rules = new ArrayList<>();
+
+        boolean done = false;
         int start = 0;
-        String name = null;
-        boolean inBlock = false;
-        for (int i = 0; i < input.size(); i++) {
-            if (input.get(i).startsWith("::")) {
-                if (!inBlock) {
-                    inBlock = true;
-                    start = i;
-                    name = input.get(i).split("::")[1];
-                    list.add(new InputSeries());
+        while (!done) {
+            done = true;
+            List<Integer> single = multiLineRegex.match(input.substring(start).trim());
+            if (single.size() == 0) {
+                single = singleLineRegex.match(input.substring(start).trim());
+                if (single.size() != 0) {
+                    System.out.println("Multiline");
+                    done = false;
                 } else {
-                    if (!name.equals(input.get(i).split("::")[1])) {
-                        throw new RuntimeException("Multiline MTL input not bounded");
-                    }
-                    inBlock = false;
-                    list.get(list.size() - 1).seriesName = name;
+                    System.out.println("no match");
                 }
+            } else {
+                System.out.println("Single");
+                done = false;
             }
-            if (inBlock) {
-                if (start == i) {
-                    String[] splitFirst = input.get(i).split("::");
-                    if (splitFirst.length > 2 && splitFirst[2].length() > 0) {
-                        System.out.println("Is a single line.");
-                        inBlock = false;
-                        list.get(list.size() - 1).series.add(input.get(i).substring(
-                                input.get(i).indexOf("::", 2) + 2));
-                        list.get(list.size() - 1).seriesName = name;
+            if (!done) {
+                String temp = input.substring(start, start + single.get(single.size() - 1));
+                start += temp.length();
+                //Process
+                String[] lines = temp.trim().split("\\n");
+                InputRuleType type = InputRuleType.fetchType(lines[0].substring(3, rulePrefixRegex.match(lines[0], 2).get(0) - 1));
+                System.out.println("Rule of type: " + type.name());
+                if (lines.length == 1) {
+                    //Single line
+                    String[] data = lines[0].substring(2).split("::");
+                    if (data.length > 2) {
+                        for (int i = 2; i < data.length; i++) {
+                            data[0] += data[i];
+                        }
                     }
+                    //TODO
                 } else {
-                    list.get(list.size() - 1).series.add(input.get(i));
+                    InputRuleType type2 = InputRuleType.fetchType(lines[lines.length - 1].substring(3, rulePrefixRegex.match(lines[lines.length - 1], 2).get(0) - 1));
+                    if (type != type2) {
+                        //Error
+                        throw new RuntimeException("Unexpected termination");
+                    }
+                    //TODO
                 }
             }
         }
-        return list;
+        System.exit(-1);
     }
 
-    public List<String> getSeries() {
-        return series;
+    public List<InputRule> getRules() {
+        return rules;
     }
     public String getSeriesName() {
         return seriesName;
     }
 
     public String toString() {
-        return "Name:" + seriesName + "=" + series;
+        return "Name:" + seriesName + "=" + rules;
     }
 }

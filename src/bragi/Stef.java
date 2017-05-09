@@ -1,5 +1,7 @@
 package bragi;
 
+import bragi.bragi.skaldparts.SkaldPrim;
+
 import java.util.*;
 
 public class Stef {
@@ -94,5 +96,9 @@ public class Stef {
             this.reverseLookAround.addAll(nfaSubNode.reverseLookAround);
             this.visur.addAll(nfaSubNode.visur);
         }
+    }
+
+    public int getNum() {
+        return index;
     }
 }

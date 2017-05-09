@@ -1,46 +1,14 @@
+#Translation protocol name
 x86-64 GAS syntax
 
-#Start with REGS, PROPERTY, NAME, and IRL_OP
-
-::REGS:: 8
-::PROPERTY ALL:: save order: 1, 2, 3, 4, 5, 6, 7, 8
-::PROPERTY 1:: accumulator
-::PROPERTY 2:: counter
-::PROPERTY 3:: data
-::PROPERTY 4:: base
-::PROPERTY 5:: stackpointer
-::PROPERTY 6:: basepointer
-::PROPERTY 7:: sourceindex
-::PROPERTY 8:: destinationindex
-::PROPERTY 1:: accumulator
-::PROPERTY 2:: counter
-::PROPERTY 3:: data
-::PROPERTY 4:: base
-::PROPERTY 5:: stackpointer
-::PROPERTY 6:: basepointer
-::PROPERTY 7:: sourceindex
-::PROPERTY 8:: destinationindex
-::NAME 1:: rax
-::NAME 2:: rcx
-::NAME 3:: rdx
-::NAME 4:: rbx
-::NAME 5:: rsp
-::NAME 6:: rbp
-::NAME 7:: rsi
-::NAME 8:: rdi
-
-::SAVE_REG::
-PUSH %0
-::SAVE_REG::
-::ENTRY_POINT::
-__F_hello0
-::ENTRY_POINT::
-::ENTRY_LABEL::
-main
-::ENTRY_LABEL::
+#String regex for variables
+::/REGEX-REG_VAR::_v[0-9]+
+::/REGEX-SAVED_VAR::[a-zA-Z][a-zA-Z0-9_]*
+::/REGEX-NUM::[0-9]*
+::/REGEX-FUNC_RETURN::return
 
 #Define additional locations for substitution, with different names, matching the IRL_OP
-::IRL_OP_CONV::
+::/CONVERSION-IRL_OP_CONV::
 #register operations
 ADD: %REG_VAR = %REG_VAR + %REG_VAR
 MUL: %REG_VAR = %REG_VAR * %REG_VAR
@@ -49,86 +17,64 @@ DIV: %REG_VAR = %REG_VAR / %REG_VAR
 #Ensure variable is saved for future use
 STO: %SAVED_VAR <- %REG_VAR
 MRT: stack %NUM -> %SAVED_VAR
+MRT: stack %SAVED_VAR -> %REG_VAR
 #jumping and labels
 LBL: %0:
 RET: return
-::IRL_OP_CONV::
+::/END-IRL_OP_CONV::
 
 #Details about how to handle each, with given actions of ASSIGN_R, ASSIGN_M
 #These just assigns registers and memory locations
 #ASSIGN_M also takes a single value, for quantity
 
-::IRL_OP_DEC::
+::/RULES-IRL_OP_DEC::
 /INSTR: ADD
-    %ASSIGN_R %0
-    MOV %1, %0
-    ADD %1, %0
+\tADD %1, %0
 /INSTR: MUL
-    %ASSIGN_R %0
-    PUSH rax
-    MOV %1, rax
-    MUL %2
-    MOV rax, %0
-    POP rax
+\tPUSH rax
+\tPUSH rdx
+\tMOV %1, rax
+\tMUL %2
+\tMOV rax, %0
+\tPOP rdx
+\tPOP rax
 /INSTR: SUB
-    %ASSIGN_R %0
-    MOV %1, %0
-    SUB %0, %2
+\tMOV %1, %0
+\tSUB %0, %2
 /INSTR: DIV
-    %ASSIGN_R %0
-    PUSH rax
-    PUSH rdx
-    MOV %1, rax
-    DIV %2
-    MOV rax, %0
-    POP rdx
-    POP rax
+\tPUSH rax
+\tPUSH rdx
+\tMOV %1, rax
+\tDIV %2
+\tMOV rax, %0
+\tPOP rdx
+\tPOP rax
 /INSTR: MOD
-    %ASSIGN_R %0
-    PUSH rax
-    PUSH rdx
-    MOV %1, rax
-    DIV %2
-    MOV rdx, %0
-    POP rdx
-    POP rax
+\t%ASSIGN_R %0
+\tPUSH rax
+\tPUSH rdx
+\tMOV %1, rax
+\tDIV %2
+\tMOV rdx, %0
+\tPOP rdx
+\tPOP rax
 /INSTR: STO
-    PUSH rax
-    MOV %1, rax
-    MOV [%MEM:%0], rax
-    POP rax
+\tPUSH rax
+\tMOV %1, rax
+\tMOV [%MEM:%0], rax
+\tPOP rax
 /INSTR: MRT
-    %ASSIGN_M %0 %1
+\t%ASSIGN_M %0 %1
 /INSTR: LBL
 .L_%0:
 /INSTR: RET
-    RET
-::IRL_OP_DEC::
+\tRET
+::/END-IRL_OP_DEC::
 
 #Interpreting variables.
 
-::REG_VAR::
-[0-9_]+ :::: $%0
-_.* :::: FETCH_R
-[^_].* :::: FETCH_R
-::REG_VAR::
-::SAVED_VAR::
+::/CONST-DATA_LABEL::\.data
+::/CONST-CODE_LABEL::\.text
 
-::SAVED_VAR::
-
-::LABEL::
-LABEL .*
-::LABEL::
-
-::FUNC_RETURN::
-RETURN return
-::FUNC_RETURN::
-
-::DATA::
-.Data
-::DATA::
-
-::CODE::
-.text
-::CODE::
-
+::/CONST-ENTRY_POINT::__F_hello0
+::/CONST-ENTRY_LABEL::main

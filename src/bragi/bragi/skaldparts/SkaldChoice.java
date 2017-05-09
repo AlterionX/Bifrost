@@ -1,4 +1,7 @@
-package bragi;
+package bragi.bragi.skaldparts;
+
+import bragi.Lausavisa;
+import bragi.SkaldComponent;
 
 import java.util.ArrayList;
 

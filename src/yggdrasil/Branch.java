@@ -1,6 +1,7 @@
 package yggdrasil;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 public class Branch implements Seedling {
@@ -47,5 +48,14 @@ public class Branch implements Seedling {
     }
     public String toString() {
         return master.tagDecode(tag, TagPriority.SUB);
+    }
+
+    public void flipChildren() {
+        LinkedList<Branch> children = new LinkedList<>();
+        for (Branch cr : this.children) {
+            children.addFirst(cr);
+        }
+        this.children.clear();
+        this.children.addAll(children);
     }
 }

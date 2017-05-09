@@ -21,17 +21,26 @@
 
         %F :
 
+        scopein
         __F_%0%GEF:
-        %OUTPUT
+        scopein
+        %OUTPUT2
+        scopein
+        %OUTPUT1
         return
+        scopeout
+        scopeout
 
     /END
 /END
 /DECODE FUNC_CALL
     /CATCHALL
 
-        %F:
-        ::TODO
+        %F: _v%GEN
+        callbegin
+        %OUTPUT
+        %F = call %0
+        callrestore
 
     /END
 /END
@@ -39,7 +48,9 @@
     /CATCHALL
 
         %F :
+        scopein
         %OUTPUT
+        scopeout
 
     /END
 /END
@@ -52,15 +63,15 @@
     /END
 /END
 /DECODE VAR_ACCSS
-    /CATCHALL
-
-        %F : %0
-        %OUTPUT
-
-    /END
     /COND 1 L_BRACK
 
         %F : %1
+        %OUTPUT
+
+    /END
+    /CATCHALL
+
+        %F : %0
         %OUTPUT
 
     /END
@@ -76,7 +87,7 @@
     /CATCHALL
 
         %F : %1
-        stack %SYM_PROPERTY:%0:type:sizeof% -> %F
+        var_dec %SYM_PROPERTY:%0:type:sizeof% -> %F
         %OUTPUT
 
     /END
@@ -86,11 +97,18 @@
 
         %F :
         %OUTPUT
-        %0 <- %1
+        %1 <- %0
 
     /END
 /END
 /DECODE EXPR
+    /COND -1 C_ARGLIST
+
+        %F:
+        %OUTPUT
+        push %0
+
+    /END
     /CATCHALL
 
         %F : %0
@@ -225,20 +243,120 @@
 
     /END
 /END
-/DECODE FUNC_CALL
-    /CATCHALL
-
-        %F : %1(%1)
-        %OUTPUT
-
-    /END
-/END
 /DECODE NEG_NUM
     /CATCHALL
 
         %F : _v%GEN
         %OUTPUT
         %F = 0 - %1
+
+    /END
+/END
+/DECODE RETURN_STMT
+    /COND 0 EXPR
+
+        %F :
+        %OUTPUT
+        return %0
+
+    /END
+    /CATCHALL
+
+        %F:
+
+        %OUTPUT
+        return
+
+    /END
+/END
+/DECODE IF_STMT
+    /COND 2 STMT
+
+        %F:
+
+        __IF_START%GEL:
+        %OUTPUT1
+        IFZ %0 hop __ELSE_START%RGEL
+        %OUTPUT1
+        hop __ENDIF%RGEL:
+        __ELSE_START%RGEL:
+        %OUTPUT1
+        __ENDIF%RGEL:
+
+    /END
+    /CATCHALL
+
+        %F:
+
+        __IF_START%GEL:
+        %OUTPUT1
+        IFZ %0 hop __ENDIF%RGEL
+        %OUTPUT1
+        __ENDIF%RGEL:
+
+    /END
+/END
+/DECODE C_ARGLIST
+    /CATCHALL
+
+        %F:
+        %OUTPUT
+
+    /END
+/END
+/DECODE WHILE_LOOP
+    /CATCHALL
+
+        %F:
+        scopein
+        __LOOP_COND%GEL:
+        %OUTPUT1
+        IFZ %0 hop __LOOP_END%RGEL
+        scopein
+        %OUTPUT1
+        scopeout
+        hop __LOOP_COND%RGEL
+        __LOOP_END%RGEL:
+        scopeout
+
+    /END
+/END
+/DECODE DO_WHILE_LOOP
+    /CATCHALL
+
+        %F:
+        scopein
+        hop __LOOP_START%GEL
+        __LOOP_COND%RGEL:
+        %OUTPUT1
+        IFZ %0 hop __LOOP_END%RGEL
+        __LOOP_START%RGEL:
+        scopein
+        %OUTPUT1
+        scopeout
+        hop __LOOP_COND%RGEL
+        __LOOP_END%RGEL:
+        scopeout
+
+    /END
+/END
+/DECODE FOR_LOOP
+    /CATCHALL
+
+        %F:
+        __FOR_LOOP%GEL:
+        %OUTPUT1
+        __LOOP_COND%RGEL:
+        %OUTPUT1
+        IFZ %0 hop __LOOP_END%RGEL
+        hop __LOOP_START%RGEL
+        __LOOP_TRAILING:
+        %OUTPUT1
+        hop __LOOP_COND%REGL
+        __LOOP_START%RGEL:
+        %OUTPUT1
+        hop __LOOP_COND%RGEL
+        __LOOP_END%RGEL:
 
     /END
 /END

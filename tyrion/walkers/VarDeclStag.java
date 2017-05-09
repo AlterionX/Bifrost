@@ -24,15 +24,17 @@ public class VarDeclStag extends Stag {
             parent.addSym(((Leaf) branch.getChildren().get(1)).getSubstring(), "var");
             parent.addSymProperty(((Leaf) branch.getChildren().get(1)).getSubstring(), "var",
                     "vartype", ((Leaf) branch.getChildren().get(0)).getSubstring());
-            System.out.println(((Leaf) branch.getChildren().get(1)).getSubstring() + ": " +
+            System.out.println("Declared " + ((Leaf) branch.getChildren().get(1)).getSubstring() + ": " +
                     parent.getSym(((Leaf) branch.getChildren().get(1)).getSubstring(), "var"));
         }
         return false;
     }
     @Override
     protected boolean onDownEnter(Branch branch, Branch child) {
-        if (child.getTag() == parent.tagEncode("NAME", TagPriority.SUB) &&
-                branch.getTag() == parent.tagEncode("VAR_ACCSS", TagPriority.SUB)) {
+        if (child.getTag() == parent.tagEncode("NAME", TagPriority.SUB) && (
+                branch.getTag() == parent.tagEncode("VAR_ACCSS", TagPriority.SUB) ||
+                        branch.getTag() == parent.tagEncode("BASE", TagPriority.SUB)
+        )) {
             //Check for decl
             if (!parent.hasSym(((Leaf) child).getSubstring(), "var")) {
                 throw new RuntimeException("Undeclared variable " + ((Leaf) child).getSubstring() + ".");

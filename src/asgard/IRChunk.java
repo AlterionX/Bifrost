@@ -2,6 +2,7 @@ package asgard;
 
 import javafx.util.Pair;
 import yggdrasil.Branch;
+import yggdrasil.Seedling;
 import yggdrasil.Yggdrasil;
 
 import java.util.ArrayList;
@@ -49,9 +50,17 @@ public class IRChunk {
 
     public boolean isMatchWith(Branch branch) {
         for (int i = 0; i < tagToMatch.size(); i++) {
-            if (tagIndex.get(i) >= branch.getChildren().size() ||
-                    ((Branch) branch.getChildren().get(tagIndex.get(i))).getTag() != tagToMatch.get(i)) {
-                return false;
+            if (tagIndex.get(i) == -1) {
+                if (!(branch.getParent() instanceof Branch) ||
+                        ((Branch)branch.getParent()).getTag() != tagToMatch.get(i)) {
+                    printRules();
+                    return false;
+                }
+            } else {
+                if (tagIndex.get(i) >= branch.getChildren().size() ||
+                        ((Branch) branch.getChildren().get(tagIndex.get(i))).getTag() != tagToMatch.get(i)) {
+                    return false;
+                }
             }
         }
         return true;

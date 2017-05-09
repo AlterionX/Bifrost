@@ -13,6 +13,7 @@ public class ScopeChanger {
     private boolean force;
     private Set<Integer> changeOnEntry = new HashSet<>();
     private Map<Integer, Set<Integer>> changeOnEntryFromTo = new HashMap<>();
+    private Map<Integer, Set<Integer>> changeOnEntryToNumbered = new HashMap<>();
     public ScopeChanger(Yggdrasil parent, boolean force) {
         this.parent = parent;
         this.force = force;
@@ -24,6 +25,8 @@ public class ScopeChanger {
             e.printStackTrace();
             throw new RuntimeException("No scope configuration file detected.");
         }
+        System.out.println(changeOnEntry);
+        System.out.println(changeOnEntryFromTo);
     }
     private void parseConfig(String input) {
         String[] config = input.trim().split("\\s+");
@@ -66,6 +69,8 @@ public class ScopeChanger {
     }
     public void onUpEnter(Branch branch) {
         if (changeOnEntry.contains(branch.getTag())) {
+            System.out.println("Headed into deeper scope: branch" + branch + ".");
+            Seedling.simplePrint(branch);
             if (force) {
                 parent.deepenScope();
             } else {
@@ -76,22 +81,29 @@ public class ScopeChanger {
     public void onDownEnter(Branch branch, Branch child) {
         if (changeOnEntryFromTo.containsKey(branch.getTag()) &&
                 changeOnEntryFromTo.get(branch.getTag()).contains(child.getTag())) {
+            System.out.println("Headed into higher scope: branch and child" + branch + ", " + child + ".");
+            Seedling.simplePrint(branch);
+            parent.scopeTravUp();
+        }
+    }
+    protected void onUpExit(Branch branch) {
+        if (changeOnEntry.contains(branch.getTag())) {
+            System.out.println("Headed into higher scope: branch" + branch + ".");
+            Seedling.simplePrint(branch);
+            parent.scopeTravUp();
+        }
+    }
+    protected void onDownExit(Branch branch, Branch child) {
+        if ((changeOnEntryFromTo.containsKey(branch.getTag()) &&
+                changeOnEntryFromTo.get(branch.getTag()).contains(child.getTag()))
+        ){
+            System.out.println("Headed into deeper scope: branch and child: " + branch + ", " + child + ".");
+            Seedling.simplePrint(branch);
             if (force) {
                 parent.deepenScope();
             } else {
                 parent.scopeTravDown();
             }
-        }
-    }
-    protected void onUpExit(Branch branch) {
-        if (changeOnEntry.contains(branch.getTag())) {
-            parent.scopeTravUp();
-        }
-    }
-    protected void onDownExit(Branch branch, Branch child) {
-        if (changeOnEntryFromTo.containsKey(branch.getTag()) &&
-                changeOnEntryFromTo.get(branch.getTag()).contains(child.getTag())) {
-            parent.scopeTravUp();
         }
     }
     public void onComplete(boolean reset) {

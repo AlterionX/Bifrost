@@ -1,5 +1,7 @@
 import yggdrasil.Branch;
 import asgard.Stag;
+import yggdrasil.Seedling;
+import yggdrasil.TagPriority;
 import yggdrasil.Yggdrasil;
 
 public class TypeDeclStag extends Stag{
@@ -19,10 +21,13 @@ public class TypeDeclStag extends Stag{
             parent.addSymProperty(TYPE_LIST[i], "type",
                     "sizeof", String.valueOf(TYPE_SIZE[i]));
         }
-        return true;
+        return false;
     }
     @Override
     protected boolean onUpEnter(Branch branch) {
+        if (branch.getTag() == parent.tagEncode("ASSIGNMENT", TagPriority.SUB)) {
+            branch.flipChildren();
+        }
         return false;
     }
     @Override

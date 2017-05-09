@@ -107,7 +107,9 @@ public class Hoenir extends Stag{
             throw new RuntimeException("Initial IRRule must consist of a single production rule.");
         }
         while (!ruleStream.get(position).startsWith("/END")) {
-            chunk.addIRRule(new IRRule(ruleStream.get(position)));
+            StringBuilder rules;
+            rules = new StringBuilder(ruleStream.get(position));
+            chunk.addIRRule(new IRRule(rules.toString()));
             position++;
         }
         return position;

@@ -35,8 +35,8 @@ public abstract class Stag {
                         scopeChanger.onUpExit(branch);
                         return;
                     }
+                    scopeChanger.onDownEnter(branch, (Branch) child);
                 }
-                scopeChanger.onDownEnter(branch, (Branch) child);
             }
             if (onUpExit(branch)) {
                 scopeChanger.onUpExit(branch);

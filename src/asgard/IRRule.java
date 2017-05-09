@@ -11,6 +11,7 @@ import java.util.List;
 public class IRRule {
     private String rule;
     private boolean isProduction;
+    private IRChunk chunk = new IRChunk();
 
     public IRRule(String rule) {
         if (rule.startsWith("%F :") || rule.startsWith("%F: ")) {
@@ -109,6 +110,21 @@ public class IRRule {
                                     additions.append(core.removeFirst());
                                 }
                             }
+                            break;
+                        case 'R':
+                            i += 3;
+                            switch (rule.charAt(i)) {
+                                case 'N':
+                                    additions.append(varcounter);
+                                    break;
+                                case 'F':
+                                    additions.append(funccounter);
+                                    break;
+                                case 'L':
+                                    additions.append(labelcounter);
+                                    break;
+                            }
+                            i++;
                             break;
                         case 'S':
                             //%SYM_PROPERTY:symbol:qualifier:property%

@@ -1,5 +1,6 @@
 package bragi;
 
+import bragi.bragi.skaldparts.SkaldPrim;
 import javafx.util.Pair;
 import java.util.*;
 

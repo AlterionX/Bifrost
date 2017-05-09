@@ -36,8 +36,8 @@ public class Yggdrasil {
     private Helvegar phaseOne;
     private Jormungandr phaseTwo;
     private Heimdallr phaseThree;
-    private Surtr phaseFour;
-    private Idavoll phaseFive;
+    //private Surtr phaseFour;
+    //private Idavoll phaseFive;
     //Per run info
     private ArrayList<String> programFiles = new ArrayList<>();
     private ArrayList<Core> cores = new ArrayList<>();
@@ -53,7 +53,7 @@ public class Yggdrasil {
         phaseOne = new Helvegar(this);
         phaseTwo = new Jormungandr(this);
         phaseThree = new Heimdallr(this);
-        phaseFour = new Surtr(this);
+        //phaseFour = new Surtr(this);
     }
 
     /**
@@ -71,13 +71,13 @@ public class Yggdrasil {
             if (phaseTwo.parse()) {
                 System.out.println("Analyzing file.");
                 phaseThree.analyze(cores.get(cores.size() - 1).getInternal(), file);
-                phaseFour.convert(phaseThree.getTargetPath());
+                //phaseFour.convert(phaseThree.getTargetPath());
             }
             System.out.println("File processed: " + file);
             System.out.println();
             System.out.println();
         }
-        phaseFive.create(programFiles.toArray(new String[0]));
+        //phaseFive.create(programFiles.toArray(new String[0]));
     }
     //Core data
     /**

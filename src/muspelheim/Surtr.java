@@ -1,14 +1,11 @@
 package muspelheim;
 
-import yggdrasil.Branch;
 import yggdrasil.Yggdrasil;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -17,6 +14,8 @@ public class Surtr {
     private String backendType;
     private Machine machine;
     private String outFileFormatString;
+
+
 
     public Surtr(Yggdrasil parent) {
         this.parent = parent;
@@ -33,12 +32,17 @@ public class Surtr {
             throw new RuntimeException("Could not access MTL declaration");
         }
         outFileFormatString = parent.MTL_BASE_DIR + "%s" + parent.MTL_EXTENSION;
-        parseMLT(config);
+        if (config.size() == 0) {
+            throw new RuntimeException("No input detected for file.");
+        }
+        if (!config.get(0).startsWith("::")) {
+            backendType = config.remove(0);
+        }
+        parseMLT(String.join("\n", config));
     }
-    private void parseMLT(List<String> config) {
+    private void parseMLT(String config) {
         System.out.println("Creating machine.");
-        backendType = config.get(0);
-        List<InputSeries> series = InputSeries.fetchSeries(config);
+        InputSeries series = new InputSeries(config);
         machine = new Machine(series);
     }
 

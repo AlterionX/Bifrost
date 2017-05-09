@@ -1,3 +1,27 @@
 func hello() {
     int x = 5 * 50 + 6 * (79 + 1) - -50;
+    int z = hell();
+    int k = heaven(-1);
+    int y = z + k;
+    {
+        y = 0;
+    }
+    for (int i = 0; i < 54; i = i+1) {
+        int f = hell();
+    }
+}
+
+func heaven(int h) {
+    if (h == 1) {
+        return 1;
+    } endif;
+    if (h > 1) {
+        return 5;
+    } else {
+        return hell();
+    } endif;
+}
+
+func hell() {
+    return 0;
 }

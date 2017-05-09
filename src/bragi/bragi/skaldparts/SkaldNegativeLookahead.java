@@ -1,8 +1,11 @@
-package bragi;
+package bragi.bragi.skaldparts;
 
-public class SkaldNegativeLookbehind implements SkaldComponent {
+import bragi.Lausavisa;
+import bragi.SkaldComponent;
+
+public class SkaldNegativeLookahead implements SkaldComponent {
     private SkaldComponent internal;
-    public SkaldNegativeLookbehind(SkaldComponent regex) {
+    public SkaldNegativeLookahead(SkaldComponent regex) {
         internal = regex;
     }
 
@@ -15,16 +18,17 @@ public class SkaldNegativeLookbehind implements SkaldComponent {
         for (int i = 0; i < level; i++) {
             System.out.print("\t");
         }
-        System.out.println("NEGATIVE_LOOKBEHIND");
+        System.out.println("NEGATIVE_LOOKAHEAD");
         internal.printStructure(level + 1);
     }
     public StringBuilder generateString() {
-        return (new StringBuilder()).append("(?<!(").append(internal.generateString()).append("))");
+        return (new StringBuilder()).append("(?!(").append(internal.generateString()).append(")");
     }
     public Lausavisa generateNFA() {
-        return new Lausavisa(true, true, internal.reverse().generateNFA().tablify().generateDFA());
+        return new Lausavisa(true, false, internal.generateNFA().tablify().generateDFA());
     }
     public SkaldComponent reverse() {
-        return new SkaldNegativeLookahead(internal.reverse());
+        return new SkaldNegativeLookbehind(internal.reverse());
     }
+
 }

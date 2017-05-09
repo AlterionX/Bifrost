@@ -1,5 +1,7 @@
 package bragi;
 
+import bragi.bragi.skaldparts.*;
+
 import java.util.List;
 
 public class Skald implements SkaldComponent {

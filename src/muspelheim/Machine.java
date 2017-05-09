@@ -19,7 +19,7 @@ public class Machine {
         machineName = name;
     }
 
-    public Machine(List<InputSeries> series) {
+    public Machine(InputSeries series) {
 
     }
 
