@@ -8,13 +8,20 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * A single moment of transformation belonging to a rule chunk.
+ */
 public class IRRule {
     private String rule;
     private boolean isProduction;
     private IRChunk chunk = new IRChunk();
 
+    /**
+     * Constructs the rule.
+     * @param rule The rule this will represent.
+     */
     public IRRule(String rule) {
-        if (rule.startsWith("%F :") || rule.startsWith("%F: ")) {
+        if (rule.startsWith("%F :") || rule.startsWith("%F:")) {
             isProduction = true;
             this.rule = rule.substring(rule.indexOf(":") + 1).trim();
         } else {
@@ -22,6 +29,9 @@ public class IRRule {
         }
     }
 
+    /**
+     * Prints the rule in a pretty format.
+     */
     public void printRule() {
         System.out.println("\t\t" + rule);
     }
@@ -30,6 +40,15 @@ public class IRRule {
     private static int labelcounter = 0;
     private static int funccounter = 0;
 
+    /**
+     * Generates the string relevant to the transformation.
+     * @param branch The source node.
+     * @param elements The list of production rule results from children nodes.
+     * @param core The list of outputs from children nodes.
+     * @param fToken The token of the production rule.
+     * @param additions The new String to append the transformations to.
+     * @param context The context data, AST, and symtable.
+     */
     public void generateString(Branch branch, List<String> elements, LinkedList<StringBuilder> core,
                                StringBuilder fToken, StringBuilder additions, Yggdrasil context) {
         //Otherwise, normal
@@ -137,30 +156,30 @@ public class IRRule {
                                     }
                                     i++;
                                 }
-                                String[] symaccess = rule.substring(start, i).split(":");
-                                for (int j = 0; j < 3; j++) {
-                                    if (symaccess[j].charAt(0) == '%') {
-                                        if (symaccess[j].charAt(1) == '~') {
-                                            symaccess[j] = symaccess[j].substring(2);
-                                            if (symaccess[j].isEmpty()) {
-                                                symaccess[j] = ((Leaf) branch.getChildren().get(Integer.parseInt(symaccess[j]))).getSubstring();
-                                            } else {
-                                                symaccess[j] = ((Leaf) branch).getSubstring();
-                                            }
-                                        } else {
-                                            symaccess[j] = symaccess[j].substring(1);
-                                            symaccess[j] = elements.get(Integer.parseInt(symaccess[j]));
-                                        }
-                                    }
-                                }
-                                if (!context.hasSym(symaccess[0], symaccess[1])) {
+                                String[] symaccess = disperse(rule.substring(start, i), branch, elements);
+                                if (context.hasSym(symaccess[0], symaccess[1]) == null) {
                                     throw new RuntimeException("Symbol " + symaccess[0] + ", with modifier " + symaccess[1] + " does not exist.");
                                 }
-                                System.out.println(context.getSym(symaccess[0], symaccess[1]));
                                 if (context.getSymProperty(symaccess[0], symaccess[1], symaccess[2]).isEmpty()) {
                                     throw new RuntimeException("Symbol " + symaccess[0] + ", with modifier " + symaccess[1] + " does not have property " + symaccess[2] + ".");
                                 }
                                 additions.append(context.getSymProperty(symaccess[0], symaccess[1], symaccess[2]));
+                                i++;
+                            } else if (rule.substring(i).startsWith("SYM_FIND:")) { //%SYM_FIND:symbol%
+                                i += "SYM_FIND:".length();
+                                start = i;
+                                while (i == start || rule.charAt(i) != '%') {
+                                    if (rule.charAt(i) == ':' && rule.charAt(i + 1) == '%') {
+                                        i++;
+                                    }
+                                    i++;
+                                }
+                                String[] symaccess = disperse(rule.substring(start, i), branch, elements);
+                                String sym = context.hasSym(symaccess[0], symaccess[1]);
+                                if (sym == null) {
+                                    throw new RuntimeException("Symbol " + symaccess[0] + ", with modifier " + symaccess[1] + " does not exist.");
+                                }
+                                additions.append(sym);
                                 i++;
                             }
                     }
@@ -171,5 +190,32 @@ public class IRRule {
             }
             i--;
         }
+    }
+
+    /**
+     * Submethod for processing a more compact instruction.
+     * @param symData The compacted instruction
+     * @param branch The source node
+     * @param elements The list of the production rule results of several children nodes.
+     * @return The array of strings that would result from the transformation rule.
+     */
+    private String[] disperse(String symData, Branch branch, List<String> elements) {
+        String[] symaccess = symData.split("\\s*:\\s*");
+        for (int j = 0; j < symaccess.length; j++) {
+            if (symaccess[j].charAt(0) == '%') {
+                if (symaccess[j].charAt(1) == '~') {
+                    symaccess[j] = symaccess[j].substring(2);
+                    if (!symaccess[j].isEmpty()) {
+                        symaccess[j] = ((Leaf) branch.getChildren().get(Integer.parseInt(symaccess[j]))).getSubstring();
+                    } else {
+                        symaccess[j] = ((Leaf) branch).getSubstring();
+                    }
+                } else {
+                    symaccess[j] = symaccess[j].substring(1);
+                    symaccess[j] = elements.get(Integer.parseInt(symaccess[j]));
+                }
+            }
+        }
+        return symaccess;
     }
 }

@@ -13,7 +13,12 @@ public class ScopeChanger {
     private boolean force;
     private Set<Integer> changeOnEntry = new HashSet<>();
     private Map<Integer, Set<Integer>> changeOnEntryFromTo = new HashMap<>();
-    private Map<Integer, Set<Integer>> changeOnEntryToNumbered = new HashMap<>();
+
+    /**
+     * Presents a scope changer for the tree walk.
+     * @param parent The context data, AST and symtable.
+     * @param force Force deepening the tree.
+     */
     public ScopeChanger(Yggdrasil parent, boolean force) {
         this.parent = parent;
         this.force = force;
@@ -25,9 +30,11 @@ public class ScopeChanger {
             e.printStackTrace();
             throw new RuntimeException("No scope configuration file detected.");
         }
-        System.out.println(changeOnEntry);
-        System.out.println(changeOnEntryFromTo);
     }
+    /**
+     * Parse the provided configuration input.
+     * @param input The input.
+     */
     private void parseConfig(String input) {
         String[] config = input.trim().split("\\s+");
         int i = 0;
@@ -64,13 +71,13 @@ public class ScopeChanger {
             if (swap) last = one;
         }
     }
+
     public void onLaunch(boolean reset) {
         if (reset) parent.resetSymTable();
     }
     public void onUpEnter(Branch branch) {
         if (changeOnEntry.contains(branch.getTag())) {
-            System.out.println("Headed into deeper scope: branch" + branch + ".");
-            Seedling.simplePrint(branch);
+            //System.out.println("Headed into deeper scope: branch" + branch + ".");
             if (force) {
                 parent.deepenScope();
             } else {
@@ -81,15 +88,13 @@ public class ScopeChanger {
     public void onDownEnter(Branch branch, Branch child) {
         if (changeOnEntryFromTo.containsKey(branch.getTag()) &&
                 changeOnEntryFromTo.get(branch.getTag()).contains(child.getTag())) {
-            System.out.println("Headed into higher scope: branch and child" + branch + ", " + child + ".");
-            Seedling.simplePrint(branch);
+            //System.out.println("Headed into higher scope: branch and child" + branch + ", " + child + ".");
             parent.scopeTravUp();
         }
     }
     protected void onUpExit(Branch branch) {
         if (changeOnEntry.contains(branch.getTag())) {
-            System.out.println("Headed into higher scope: branch" + branch + ".");
-            Seedling.simplePrint(branch);
+            //System.out.println("Headed into higher scope: branch" + branch + ".");
             parent.scopeTravUp();
         }
     }
@@ -97,8 +102,7 @@ public class ScopeChanger {
         if ((changeOnEntryFromTo.containsKey(branch.getTag()) &&
                 changeOnEntryFromTo.get(branch.getTag()).contains(child.getTag()))
         ){
-            System.out.println("Headed into deeper scope: branch and child: " + branch + ", " + child + ".");
-            Seedling.simplePrint(branch);
+            //System.out.println("Headed into deeper scope: branch and child: " + branch + ", " + child + ".");
             if (force) {
                 parent.deepenScope();
             } else {
