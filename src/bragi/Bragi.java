@@ -22,13 +22,14 @@ public class Bragi {
                     + "Enter 3 to search a string for the regex.\n"
                     + "Enter 4 to check the pattern string.\n"
                     + "Enter 5 to check the reduced, formal pattern string.\n"
+                    + "Enter 6 to utilize NFA search instead.\n"
                     + "Enter q to quit.");
-            String line = fetchUserOptionString(new String[]{"1", "2", "3", "4", "5", "q"});
+            String line = fetchUserOptionString(new String[]{"1", "2", "3", "4", "5", "6", "q"});
             switch (line) {
                 case "1":
                     System.out.println("Enter a line to match with the regex.");
                     line = s.nextLine();
-                    System.out.println("Using DFA.");
+                    System.out.println("Using NFA.");
                     List<Integer> matches = parser.match(line);
                     if (matches.isEmpty()) {
                         System.out.println("Failed to match.");
@@ -53,6 +54,17 @@ public class Bragi {
                     break;
                 case "5":
                     System.out.println("Regenerated pattern: " + parser.generateString());
+                    break;
+                case "6":
+                    System.out.println("Enter a line to match with the regex.");
+                    line = s.nextLine();
+                    System.out.println("Using DFA.");
+                    matches = parser.getDFA().process(line, 0);
+                    if (matches.isEmpty()) {
+                        System.out.println("Failed to match.");
+                    } else {
+                        System.out.println("String matched! Match from " + 0 + " to " + matches + ".");
+                    }
                     break;
                 default:
                     System.out.println("HAXORS DIEEEEEE");

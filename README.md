@@ -13,13 +13,15 @@ My apologies for the names.
 * The engine symbol table: `Yggdrasil`
 * The lexer: `Helvegar`
   * The regex engine: `Bragi`
+  * The regex is actually called `Skald`
 * The parser: `Jormungandr`
 * The AST: `Yggdrasil`
   * The tree walker interface(abstract class): `Stag`
-* The semantics analysis: `Heimdallr`
+* The semantics analyzer: `Heimdallr`
   * The symbol table: `Nidhogg`
-  * User provided extensions of `Stag`
-  * Intermediate code generator: `Hoenir`
+  * User provided extensions of `Stag`, the tree walker class
+* Intermediate code generator: `Hoenir`
+  * A subclass of Stag as well
 * Assembly compiler: `Surtr`
 * Assembler caller: `Idavoll`
 

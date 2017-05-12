@@ -4,6 +4,7 @@ import yggdrasil.*;
 public class DArgListStag extends Stag {
     String funcName;
     int argNum = 0;
+    int paramSize;
 
     public DArgListStag(Yggdrasil parent, String lastFuncName) {
         super(parent, false);
@@ -18,6 +19,7 @@ public class DArgListStag extends Stag {
         if (branch.getTag() == parent.tagEncode("VAR_DEC", TagPriority.SUB)) {
             parent.addSymProperty(funcName, "function", "arg" + argNum + "type",
                     ((Leaf) branch.getChildren().get(0)).getSubstring());
+            paramSize += Integer.parseInt(parent.getSymProperty(((Leaf) branch.getChildren().get(0)).getSubstring(), "type", "sizeof"));
             parent.addSymProperty(funcName, "function", "arg" + argNum + "name",
                     ((Leaf) branch.getChildren().get(1)).getSubstring());
             argNum++;
@@ -39,7 +41,7 @@ public class DArgListStag extends Stag {
     @Override
     protected boolean onComplete() {
         parent.addSymProperty(funcName, "function", "argCount", String.valueOf(argNum));
-        System.out.println("\t\t" + parent.getSym(funcName, "function"));
+        parent.addSymProperty(funcName, "function", "paramSize", String.valueOf(paramSize));
         return false;
     }
     @Override

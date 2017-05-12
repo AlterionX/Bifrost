@@ -1,7 +1,6 @@
 package midgard;
 
 import yggdrasil.TagPriority;
-import yggdrasil.TagRecord;
 import yggdrasil.Yggdrasil;
 
 import java.util.Arrays;
@@ -11,10 +10,10 @@ import java.util.Set;
 public class LRState {
     private Yggdrasil parent;
     private Integer pos;
-    private CFGRule rule;
+    private CFGProduction rule;
     private Set<Integer> follows;
     //Initialization
-    public LRState(int pos, CFGRule rule, Yggdrasil parent, Integer... follows) {
+    public LRState(int pos, CFGProduction rule, Yggdrasil parent, Integer... follows) {
         this.parent = parent;
         this.pos = pos;
         this.rule = rule;
@@ -39,7 +38,7 @@ public class LRState {
     public int getNext() {
         return rule.getRightElement(pos);
     }
-    public CFGRule getRule() {
+    public CFGProduction getRule() {
         return rule;
     }
     public boolean isAtEnd() {

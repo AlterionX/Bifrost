@@ -2,10 +2,7 @@ package midgard;
 
 import vanaheimr.ReduceReduceException;
 import vanaheimr.ShiftReduceException;
-import yggdrasil.Branch;
-import yggdrasil.TagPriority;
-import yggdrasil.TagRecord;
-import yggdrasil.Yggdrasil;
+import yggdrasil.*;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -18,25 +15,36 @@ import java.util.*;
  * Named after the Norse goddess Skadi, now a Hunter of the most obscure nonterminals.
  * Provides a rulebook for Jormungandr to create ordered chaos (aka an AST).
  */
-public class Skadi {
+public class Skadi extends Cosmos {
     private static final Set<SkadiType> SUPPORTED_PARSER_CLASSES = new HashSet<>(Arrays.asList(
             SkadiType.LR0, SkadiType.SLR
     ));
-    //Background information
+    //Stable fields
+    //CFG and parser info
     private CFG cfg;
     private SkadiType type;
-    private Yggdrasil parent;
-    //LR table data
+    //LR table/graph data
     private List<LRNode> graph;
     private List<Map<Integer, Integer>> lrTransitionTable;
 
-    //Initialization methods
-    public Skadi(Yggdrasil parent, String inputFile) {
-        this.parent = parent;
+    /**
+     * Initialize Skadi.
+     * @param context The context data, AST, and symtable.
+     */
+    public Skadi(Yggdrasil context) {
+        super(context);
+        System.out.println("Skadi configured.");
+    }
+    /**
+     * Configure Skadi and the CFG sub-component.
+     */
+    protected void configure() {
         //Read Configuration
         String parserConfig;
         try {
-            parserConfig = new String(Files.readAllBytes(Paths.get(inputFile)), StandardCharsets.UTF_8).trim();
+            parserConfig = new String(Files.readAllBytes(Paths.get(
+                    context.BASE_DIR + context.TARGET + context.PARSER_DEC_EXTENSION
+            )), StandardCharsets.UTF_8).trim();
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException("Input file incorrect.");
@@ -74,13 +82,17 @@ public class Skadi {
                 throw new RuntimeException("Extended parser classes unsupported.");
             }
         }
-        cfg = new CFG(parent, parserConfig);
+        cfg = new CFG(context, parserConfig);
         this.generateParser();
         //Show results
-        printGraph();
+        if (context.DEBUG) printGraph();
         printLRTransTable();
     }
+
     //LR table building
+    /**
+     * Launch the parser generation.
+     */
     private void generateParser() {
         switch (type) {
             case GLR:
@@ -96,7 +108,7 @@ public class Skadi {
                 System.out.println("Constructing SLR table.");
                 break;
         }
-        ruleExpansion();
+        productionExpansion();
         switch (type) {
             case GLR:
             case LR1:
@@ -112,17 +124,21 @@ public class Skadi {
                 break;
         }
     }
-    private void ruleExpansion() {
+    /**
+     * Expand the first production into a production state, then a node,
+     * and launch the process of producing a graph with that node as the initial node.
+     */
+    private void productionExpansion() {
         if (!SUPPORTED_PARSER_CLASSES.contains(type)) {
             System.out.println("Unsupported");
             throw new RuntimeException("Unsupported parser class.");
         }
-        List<CFGRule> list = cfg.fetchRulesForLeft(cfg.fetchZeroInstruction());
+        List<CFGProduction> list = cfg.fetchRulesForLeft(cfg.fetchZeroInstruction());
         if (list.size() != 1) {
             throw new RuntimeException("The starting rule, if not automatically defined, must only have one expansion.");
         }
-        LRNode handle = new LRNode(new LRState(0, list.get(0), parent,
-                parent.tagEncode(TagRecord.EOF_LABEL, TagPriority.SUB)), parent);
+        LRNode handle = new LRNode(new LRState(0, list.get(0), context,
+                context.tagEncode(TagRecord.EOF_LABEL, TagPriority.SUB)), context);
         graph = new ArrayList<>();
         graph.add(handle);
         processGraph(handle);
@@ -131,10 +147,19 @@ public class Skadi {
             processGraph(node);
         }
     }
+    /**
+     * Process a single node. However, this also launches all the processing on any produced sub-nodes,
+     * ultimately resulting in a full graph.
+     * @param node The initial node.
+     */
     private void processGraph(LRNode node) {
         closure(node);
         advance(node);
     }
+    /**
+     * Run a closure operation, where the node is filled out by all production state equivalents.
+     * @param node The node being put under closure.
+     */
     private void closure(LRNode node) {
         switch (type) {
             case GLR:
@@ -151,10 +176,10 @@ public class Skadi {
                 while (!done) {
                     done = true;
                     for (LRState state : states) {
-                        if (!state.isAtEnd() && !parent.isTerminal(state.getNext())) {
-                            List<CFGRule> rules = cfg.fetchRulesForLeft(state.getNext());
-                            for (CFGRule rule : rules) {
-                                LRState reduplicatedState = (new LRState(0, rule, parent));
+                        if (!state.isAtEnd() && !context.isTerminal(state.getNext())) {
+                            List<CFGProduction> rules = cfg.fetchRulesForLeft(state.getNext());
+                            for (CFGProduction rule : rules) {
+                                LRState reduplicatedState = (new LRState(0, rule, context));
                                 if (!node.hasRuleState(reduplicatedState) && !genStates.contains(reduplicatedState)) {
                                     genStates.add(reduplicatedState);
                                 }
@@ -171,6 +196,11 @@ public class Skadi {
                 break;
         }
     }
+    /**
+     * Done after the closure of a node. Advance the node to the next children nodes. Produces a new set of
+     * nodes to put under closure, merge, then advance.
+     * @param node The node to advance.
+     */
     private void advance(LRNode node) {
         switch (type) {
             case LALR:
@@ -195,7 +225,7 @@ public class Skadi {
                 }
                 Map<Integer, LRNode> filteredNodes = new HashMap<>();
                 for (Integer x : transitions.keySet()) {
-                    LRNode block = new LRNode(transitions.get(x), parent);
+                    LRNode block = new LRNode(transitions.get(x), context);
                     closure(block);
                     if (!graph.contains(block)) {
                         graph.add(block);
@@ -211,6 +241,10 @@ public class Skadi {
                 break;
         }
     }
+    /**
+     * Turn the graph into a simple table, indexed first by a node, then the input terminal or non-terminal.
+     * The entries of the table are the states to transition to or actions to take.
+     */
     private void populateTransitionTable() {
         int maxQuant;
         int finalityTriggered = 0;
@@ -229,7 +263,7 @@ public class Skadi {
                     lrTransitionTable.add(new HashMap<>());
                     Map<Integer, Integer> stateRow = lrTransitionTable.get(i);
                     for (Integer k : outEdges.keySet()) {
-                        if (parent.isTerminal(k)) {
+                        if (context.isTerminal(k)) {
                             //Shift
                             stateRow.put(k, graph.size() + graph.indexOf(outEdges.get(k)));
                         } else {
@@ -242,14 +276,14 @@ public class Skadi {
                         boolean isFinal = graph.get(i).isEndNode();
                         if (state.isAtEnd()) {
                             for (Integer k : cfg.getFollowSet(state.getRule().getLeft())) {
-                                Integer out = stateRow.put(k, graph.size() * 3 + cfg.encodeRule(state.getRule()));
+                                Integer out = stateRow.put(k, graph.size() * 3 + cfg.encodeProduction(state.getRule()));
                                 if (out != null) { //Error
                                     System.out.println("SLR table generation error.");
                                     System.out.println("The provided grammar is not SLR parsable");
                                     if (out >= 3*graph.size()) {
                                         throw new ReduceReduceException("Reduce reduce exception with rules " +
                                                 state.getRule() + " and " +
-                                                cfg.decodeRule(out - 3*graph.size()) +
+                                                cfg.decodeProduction(out - 3*graph.size()) +
                                                 " in node:\n" + node
                                         );
                                     } else {
@@ -258,7 +292,7 @@ public class Skadi {
                                 }
                             }
                             if (isFinal) {
-                                stateRow.put(parent.tagEncode(TagRecord.EOF_LABEL, TagPriority.SUB), -1);
+                                stateRow.put(context.tagEncode(TagRecord.EOF_LABEL, TagPriority.SUB), -1);
                                 finalityTriggered = 1;
                             }
                         }
@@ -268,7 +302,7 @@ public class Skadi {
             case LR0:
                 finalityTriggered = 0;
                 lrTransitionTable = new ArrayList<>(graph.size());
-                maxQuant = parent.tagCount();
+                maxQuant = context.tagCount();
                 for (int i = 0; i < graph.size(); i++) {
                     lrTransitionTable.add(new HashMap<>(maxQuant));
                     boolean isFinal = graph.get(i).isEndNode();
@@ -276,8 +310,8 @@ public class Skadi {
                     for (LRState state : graph.get(i).fetchStates()) {
                         if (state.isAtEnd()) {
                             if (!isReduce) {
-                                for (int k = 0; k < parent.terminalCount(); k++) {
-                                    lrTransitionTable.get(i).put(k, graph.size() * 3 + cfg.encodeRule(state.getRule()));
+                                for (int k = 0; k < context.terminalCount(); k++) {
+                                    lrTransitionTable.get(i).put(k, graph.size() * 3 + cfg.encodeProduction(state.getRule()));
                                 }
                                 isReduce = true;
                             } else {
@@ -290,7 +324,7 @@ public class Skadi {
                         }
                     }
                     for (Integer trans : graph.get(i).getOutEdges().keySet()) {
-                        if (parent.isTerminal(trans)) {
+                        if (context.isTerminal(trans)) {
                             if (isReduce) {
                                 //Shift reduce error
                                 System.out.println();
@@ -300,7 +334,7 @@ public class Skadi {
                                 Integer oldReduce = lrTransitionTable.get(i).get(trans) - 3*graph.size();
                                 lrTransitionTable.get(i).put(trans,
                                         graph.indexOf(graph.get(i).getOutEdges().get(trans)) +
-                                        ((3+oldReduce) * graph.size()) + parent.tagCount());
+                                        ((3+oldReduce) * graph.size()) + context.tagCount());
                             } else {
                                 //Shift
                                 lrTransitionTable.get(i).put(trans,
@@ -313,7 +347,7 @@ public class Skadi {
                     }
                     if (isFinal) {
                         //Accept
-                        lrTransitionTable.get(i).put(parent.tagEncode(TagRecord.EOF_LABEL, TagPriority.SUB), -1);
+                        lrTransitionTable.get(i).put(context.tagEncode(TagRecord.EOF_LABEL, TagPriority.SUB), -1);
                         finalityTriggered = 1;
                     }
                 }
@@ -323,6 +357,9 @@ public class Skadi {
             System.exit(-1);
         }
     }
+    /**
+     * Print the graph of nodes.
+     */
     private void printGraph() {
         System.out.println("/************************LR Transition Graph************************/");
         System.out.println("Total node count: " + graph.size());
@@ -332,6 +369,10 @@ public class Skadi {
         }
         System.out.println("/******************************************************************/");
     }
+    /**
+     * Print the generated transition table. Tends to be cleaner and more concise than the graph.
+     * Indexes may requiring referring to fully understand.
+     */
     private void printLRTransTable() {
         System.out.println("/************************LR Translation Table**********************/");
         switch (type) {
@@ -344,17 +385,17 @@ public class Skadi {
             case LR0:
             case SLR:
                 System.out.println("Rules: ");
-                for (int i = 0; i < cfg.getRuleCount(); i++) {
-                    System.out.println("Rules " + i + ": " + cfg.decodeRule(i));
+                for (int i = 0; i < cfg.getProductionCount(); i++) {
+                    System.out.println("Rules " + i + ": " + cfg.decodeProduction(i));
                 }
                 System.out.print("state");
-                for (int i = 0; i < parent.tagCount(); i++) {
+                for (int i = 0; i < context.tagCount(); i++) {
                     System.out.printf("\t\t%03d", i);
                 }
                 System.out.println();
                 for (int i = 0; i < graph.size(); i++) {
                     System.out.printf("s%02d\t\t", i);
-                    for (int j = 0; j < parent.tagCount(); j++) {
+                    for (int j = 0; j < context.tagCount(); j++) {
                         Integer value = lrTransitionTable.get(i).getOrDefault(j, -50);
                         if (value < -1) {
                             System.out.print("\t\t");
@@ -366,12 +407,12 @@ public class Skadi {
                             System.out.printf("\ts%3d", value - graph.size());
                         } else if (value < graph.size() * 3) {
                             //Something about a conflict here
-                        } else if (value < graph.size() * 3 + parent.tagCount()) { // reduce
+                        } else if (value < graph.size() * 3 + context.tagCount()) { // reduce
                             System.out.printf("\tr%3d", value - 3 * graph.size());
                         } else {
                             //Conflicts
-                            System.out.printf("\t%2d,%2d", (value - 3 * graph.size() - parent.tagCount())%graph.size(),
-                                    (value - 3 * graph.size() - parent.tagCount())/graph.size());
+                            System.out.printf("\t%2d,%2d", (value - 3 * graph.size() - context.tagCount())%graph.size(),
+                                    (value - 3 * graph.size() - context.tagCount())/graph.size());
                         }
                     }
                     System.out.println();
@@ -381,8 +422,15 @@ public class Skadi {
     }
 
     //LR parsing stage
+    /**
+     * Given the current state of the stream and stack, decide the next action.
+     * @param state Current state.
+     * @param curr The current terminal or non-terminal.
+     * @param next The next terminal or non-terminal.
+     * @return The next action, a shift or reduce.
+     */
     public Integer progressAndEncode(Integer state, Branch curr, Branch next) {
-        Integer currTag = (curr == null ? parent.tagEncode(TagRecord.EOF_LABEL, TagPriority.SUB) : curr.getTag());
+        Integer currTag = (curr == null ? context.tagEncode(TagRecord.EOF_LABEL, TagPriority.SUB) : curr.getTag());
         Map<Integer, Integer> transitionRow = lrTransitionTable.get(state);
         while (transitionRow.containsKey(currTag) &&
                 transitionRow.get(currTag) < graph.size() &&
@@ -391,26 +439,60 @@ public class Skadi {
         }
         return transitionRow.getOrDefault(currTag, -50);
     }
+    /**
+     * Checks if the encoded action is a reduce.
+     * @param encoding Encoded action.
+     * @return If the encoded action is a reduce action.
+     */
     public boolean isReduce(Integer encoding) {
         return encoding >= graph.size() * 3;
     }
-    public CFGRule reduceRule(Integer encoding, Branch curr, Branch next) {
-        Object currTag = (curr == null ? "%EOF" : curr);
-        if (parent.DEBUG) {
+    /**
+     * Gets the production associated with a certain reduce.
+     * @param encoding The encoded action.
+     * @param curr The current top of the stack.
+     * @param next The current next input.
+     * @return The production to execute.
+     */
+    public CFGProduction getReduceProduction(Integer encoding, Branch curr, Branch next) {
+        Object currTag = (curr == null ? TagRecord.EOF_LABEL : curr);
+        if (context.DEBUG) {
             System.out.print("Rule reduce: encoding[" + encoding + "], current tag[" + currTag + "]");
-            System.out.println(cfg.decodeRule(encoding - 3 * graph.size()));
+            System.out.println(cfg.decodeProduction(encoding - 3 * graph.size()));
         }
-        return cfg.decodeRule(encoding - 3*graph.size());
+        return cfg.decodeProduction(encoding - 3*graph.size());
     }
+    /**
+     * Progress the tree to the next state after a reduce.
+     * @param state The current node.
+     * @param nextBranch The next input.
+     * @return The new node.
+     */
     public Integer reduceProgress(Integer state, Branch nextBranch) {
         return lrTransitionTable.get(state).get(nextBranch.getTag());
     }
+    /**
+     * Determine if the action encoded is a shift.
+     * @param encoding The encoded action.
+     * @return If it is a shift.
+     */
     public boolean isShift(Integer encoding) {
         return encoding >= graph.size() && encoding < graph.size() * 2;
     }
+    /**
+     * Determines if an encoded action is conveying the completed parsing status.
+     * @param encoding The encoded action.
+     * @param curr the current label.
+     * @return If it is a completed action or not.
+     */
     public boolean isComplete(Integer encoding, Branch curr) {
-        return encoding == -1 && curr.getTag() == parent.tagEncode(TagRecord.EOF_LABEL, TagPriority.SUB);
+        return encoding == -1 && curr.getTag() == context.tagEncode(TagRecord.EOF_LABEL, TagPriority.SUB);
     }
+    /**
+     * Decodes the state an encoding encodes.
+     * @param encoding The encoding.
+     * @return The decoded state.
+     */
     public Integer decode(Integer encoding) {
         if (encoding >= graph.size() * 3 || encoding < 0) {
             throw new RuntimeException("State encodings must be between 0 and three times the number of nodes.");

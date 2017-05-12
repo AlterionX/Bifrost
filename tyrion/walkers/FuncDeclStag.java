@@ -8,6 +8,8 @@ public class FuncDeclStag extends Stag {
     private boolean inFunc = false;
     private String lastFuncName;
 
+    private int suffix;
+
     public FuncDeclStag(Yggdrasil parent) {
         super(parent, true);
     }
@@ -19,7 +21,7 @@ public class FuncDeclStag extends Stag {
     @Override
     protected boolean onUpEnter(Branch branch) {
         if (branch.getTag() == parent.tagEncode("FUNC_DEC", TagPriority.PAR)) {
-            System.out.println("We have here, a declaration of peace.");
+            //System.out.println("We have here, a declaration of peace.");
             if (inFunc) {
                 throw new RuntimeException("Error. Function has been declared inside a function. Aborting.");
             }
@@ -31,15 +33,15 @@ public class FuncDeclStag extends Stag {
     protected boolean onDownEnter(Branch branch, Branch child) {
         if (branch.getTag() == parent.tagEncode("FUNC_DEC", TagPriority.SUB)) {
             if (child.getTag() == parent.tagEncode("NAME", TagPriority.SUB)) {
-                System.out.println("\tFunction name: " + ((Leaf) child).getSubstring());
-                parent.addSym(((Leaf) child).getSubstring(), "function");
+                //System.out.println("\tFunction name: " + ((Leaf) child).getSubstring());
+                parent.addSymAtRoot(((Leaf) child).getSubstring(), "function");
                 lastFuncName = ((Leaf) child).getSubstring();
             } else if (child.getTag() == parent.tagEncode("D_ARGLIST", TagPriority.SUB)) {
-                System.out.println("\tArgument list: ");
+                //System.out.println("\tArgument list: ");
                 DArgListStag argWalker = new DArgListStag(parent, lastFuncName);
                 Stag.startWalk(argWalker, child, false);
             } else if (child.getTag() == parent.tagEncode("STMT", TagPriority.SUB)) {
-                System.out.println("\tStatement begins.");
+                //System.out.println("\tStatement begins.");
             }
         }
         return false;
@@ -47,9 +49,9 @@ public class FuncDeclStag extends Stag {
     @Override
     protected boolean onUpExit(Branch branch) {
         if (branch.getTag() == parent.tagEncode("FUNC_DEC", TagPriority.PAR)) {
-            System.out.println("The function has ended.");
+            //System.out.println("The function has ended.");
             inFunc = false;
-            System.out.println();
+            //System.out.println();
         }
         return false;
     }

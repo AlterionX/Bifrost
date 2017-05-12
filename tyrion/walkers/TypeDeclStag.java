@@ -5,8 +5,8 @@ import yggdrasil.TagPriority;
 import yggdrasil.Yggdrasil;
 
 public class TypeDeclStag extends Stag{
-    private static final int[] TYPE_SIZE = {8, 8, 8, 8};
-    private static String[] TYPE_LIST = {"int", "int_arr", "str", "str_arr"};
+    private static final int[] NATIVE_TYPE_SIZE = {8/*, 8, 8, 8*/};
+    private static String[] NATIVE_TYPE_LIST = {"int"/*, "int_arr", "str", "str_arr"*/};
     public TypeDeclStag(Yggdrasil parent) {
         super(parent, true);
     }
@@ -14,12 +14,12 @@ public class TypeDeclStag extends Stag{
     @Override
     protected boolean onLaunch() {
         //Default types
-        for (int i = 0; i < TYPE_LIST.length; i++) {
-            parent.addSym(TYPE_LIST[i], "type");
-            parent.addSymProperty(TYPE_LIST[i], "type",
+        for (int i = 0; i < NATIVE_TYPE_LIST.length; i++) {
+            parent.addSym(NATIVE_TYPE_LIST[i], "type");
+            parent.addSymProperty(NATIVE_TYPE_LIST[i], "type",
                     "level", "primitive");
-            parent.addSymProperty(TYPE_LIST[i], "type",
-                    "sizeof", String.valueOf(TYPE_SIZE[i]));
+            parent.addSymProperty(NATIVE_TYPE_LIST[i], "type",
+                    "sizeof", String.valueOf(NATIVE_TYPE_SIZE[i]));
         }
         return false;
     }
@@ -48,6 +48,6 @@ public class TypeDeclStag extends Stag{
     }
     @Override
     public String getWalkerName() {
-        return null;
+        return "Type declaration";
     }
 }

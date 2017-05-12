@@ -31,7 +31,7 @@ public class TagRecord {
         }
         return lexTags.indexOf(tag);
     }
-    public boolean hasLexTag(String tag) {
+    public boolean hasLexLabel(String tag) {
         return lexTags.contains(tag);
     }
     public boolean hasLexTag(Integer tag) {
@@ -47,23 +47,23 @@ public class TagRecord {
     //Parsing tags, context-free grammar tags
     //Modifying and querying state of parsing tags (both terminal and non-terminal)
     public int addParTagIfAbsent(String tag) {
-        if (hasLexTag(tag)) return lexEncode(tag);
+        if (hasLexLabel(tag)) return lexEncode(tag);
         if (!parTags.contains(tag)) {
             parTags.add(tag);
             return parTags.size() - 1 + lexTags.size();
         }
         return parTags.indexOf(tag) + lexTags.size();
     }
-    public boolean hasParTag(String tag) {
-        return hasLexTag(tag) || parTags.contains(tag);
+    public boolean hasParLabel(String tag) {
+        return hasLexLabel(tag) || parTags.contains(tag);
     }
     public boolean hasParTag(Integer tag) {
         return hasLexTag(tag) || tag - lexTags.size() < parTags.size();
     }
     //Encoding and decoding of parsing tags
     public int parEncode(String label) {
-        if (!hasParTag(label)) return -1;
-        return hasLexTag(label) ? lexEncode(label) : parTags.indexOf(label) + lexTags.size();
+        if (!hasParLabel(label)) return -1;
+        return hasLexLabel(label) ? lexEncode(label) : parTags.indexOf(label) + lexTags.size();
     }
     public String parDecode(int tag) {
         if (tag >= lexTags.size() + parTags.size()) throw new RuntimeException("Unknown parsing tag.");
@@ -74,7 +74,7 @@ public class TagRecord {
     public String generateSubTag(String oldTag) {
         if (subTags.contains(oldTag)) {
             return generateSubTag(getSubOrig(subEncode(oldTag)));
-        } else if (hasParTag(oldTag)) {
+        } else if (hasParLabel(oldTag)) {
             List<Integer> subs = parSubConvMap.putIfAbsent(parEncode(oldTag), new ArrayList<>());
             if (subs == null) {
                 subs = parSubConvMap.get(parEncode(oldTag));
@@ -92,16 +92,16 @@ public class TagRecord {
     public String getSubOrig(int tag) {
         return parDecode(subParConvMap.get(tag));
     }
-    public boolean hasSubTag(String tag) {
-        return hasLexTag(tag) || hasParTag(tag) || subTags.contains(tag);
+    public boolean hasSubLabel(String tag) {
+        return hasLexLabel(tag) || hasParLabel(tag) || subTags.contains(tag);
     }
     public boolean hasSubTag(Integer tag) {
         return hasLexTag(tag) || hasParTag(tag) || tag - lexTags.size() - parTags.size() < subTags.size();
     }
     //Encoding and decoding of substituted and parsing tags
     public int subEncode(String label) {
-        if (!hasSubTag(label)) return -1;
-        return hasLexTag(label) ? lexEncode(label) : (hasParTag(label) ? parEncode(label) : subTags.indexOf(label) + lexTags.size() + parTags.size());
+        if (!hasSubLabel(label)) return -1;
+        return hasLexLabel(label) ? lexEncode(label) : (hasParLabel(label) ? parEncode(label) : subTags.indexOf(label) + lexTags.size() + parTags.size());
     }
     public String subDecode(int tag) {
         if (tag == -1) throw new RuntimeException("Tags cannot have negative values.");
@@ -110,7 +110,7 @@ public class TagRecord {
     //Additional data fetchers
     //Locating terminal tags, which should solely consist of lexing tags. Single characters as well
     public boolean isTerminal(String label) {
-        return hasLexTag(label);
+        return hasLexLabel(label);
     }
     public boolean isTerminal(int tag) {
         return tag < lexTags.size();

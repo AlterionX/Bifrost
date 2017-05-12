@@ -7,6 +7,9 @@ public class Nastrond {
     private Map<String, Map<String, Map<String, String>>> functionSeparatedMap = new HashMap<>();
     private List<Nastrond> children;
     private Integer nextTraverse;
+
+    private String prefix = "";
+
     public Nastrond(Nastrond parent) {
         children = new ArrayList<>();
         this.parent = parent;
@@ -69,5 +72,16 @@ public class Nastrond {
             return Optional.of(this);
         }
         return Optional.ofNullable(parent).map((nastrond -> nastrond.getSymScope(symbol, qualifier))).orElse(Optional.empty());
+    }
+
+    public void mangle(String prefix) {
+        this.prefix = prefix;
+        for (int i = 0; i < children.size(); i++) {
+            children.get(i).mangle(prefix + "_" + i);
+        }
+    }
+
+    public String getPrefix() {
+        return prefix;
     }
 }

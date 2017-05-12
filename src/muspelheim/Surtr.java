@@ -1,94 +1,90 @@
 package muspelheim;
 
+import javafx.util.Pair;
+import yggdrasil.Cosmos;
 import yggdrasil.Yggdrasil;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-public class Surtr {
-    private Yggdrasil parent;
-    private String backendType;
+public class Surtr extends Cosmos{
     private Machine machine;
     private String outFileFormatString;
 
+    private Sinmara reparser;
 
-
-    public Surtr(Yggdrasil parent) {
-        this.parent = parent;
-        List<String> config;
-        try {
-            config = Files.readAllLines(Paths.get(parent.BASE_DIR + parent.TARGET +
-                    parent.MACHINE_LANG_TRANSLATION_DEC_EXTENSION)).stream().filter(
-                    str -> !str.isEmpty() && !str.trim().startsWith("#")
-            ).map(
-                    String::trim
-            ).collect(Collectors.toList());
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException("Could not access MTL declaration");
-        }
-        outFileFormatString = parent.MTL_BASE_DIR + "%s" + parent.MTL_EXTENSION;
-        if (config.size() == 0) {
-            throw new RuntimeException("No input detected for file.");
-        }
-        if (!config.get(0).startsWith("::")) {
-            backendType = config.remove(0);
-        }
-        parseMLT(String.join("\n", config));
+    public Surtr(Yggdrasil context) {
+        super(context);
+        System.out.println("Surtr configured.");
     }
-    private void parseMLT(String config) {
-        System.out.println("Creating machine.");
-        InputSeries series = new InputSeries(config);
-        machine = new Machine(series);
+    protected void configure() {
+        machine = new Machine(context.BASE_DIR + context.TARGET + context.MACHINE_DEC_EXTENSION);
+        if (context.DEBUG) System.out.println(machine.toDefinitionString());
+        reparser = new Sinmara(context);
+        outFileFormatString = context.MTL_BASE_DIR + "%s" + context.MTL_EXTENSION;
     }
 
     public void convert(String file) {
-        List<String> irlLines;
-        try {
-            irlLines = Files.readAllLines(Paths.get(parent.BASE_DIR + file)).stream().filter(
-                    str -> !str.startsWith("#")).collect(Collectors.toList());
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException("Cannot open IRL file for reading.");
+        System.out.println("Converting to backend");
+        System.out.println("Backend name: " + reparser.getAsm());
+
+
+
+
+        boolean implemented = false;
+        if (!implemented) {
+            System.out.println("Backend conversion system not yet implemented.");
+            System.exit(0);
         }
+
+
+
+        //Write back
         BufferedWriter writer;
         try {
-            Files.deleteIfExists(Paths.get(parent.BASE_DIR +
+            Files.deleteIfExists(Paths.get(context.BASE_DIR +
                     String.format(outFileFormatString, file)));
-            Files.createFile(Paths.get(parent.BASE_DIR +
+            Files.createFile(Paths.get(context.BASE_DIR +
                     String.format(outFileFormatString, file)));
-            writer = Files.newBufferedWriter(Paths.get(parent.BASE_DIR +
+            writer = Files.newBufferedWriter(Paths.get(context.BASE_DIR +
                     String.format(outFileFormatString, file)));
         } catch (IOException e0) {
             e0.printStackTrace();
             try {
-                Files.createDirectories(Paths.get(parent.BASE_DIR +
+                Files.createDirectories(Paths.get(context.BASE_DIR +
                         String.format(outFileFormatString, file)).getParent());
-                Files.deleteIfExists(Paths.get(parent.BASE_DIR +
+                Files.deleteIfExists(Paths.get(context.BASE_DIR +
                         String.format(outFileFormatString, file)));
-                Files.createFile(Paths.get(parent.BASE_DIR +
+                Files.createFile(Paths.get(context.BASE_DIR +
                         String.format(outFileFormatString, file)));
-                writer = Files.newBufferedWriter(Paths.get(parent.BASE_DIR +
+                writer = Files.newBufferedWriter(Paths.get(context.BASE_DIR +
                         String.format(outFileFormatString, file)));
             } catch (IOException e1) {
                 e1.printStackTrace();
                 throw new RuntimeException("Cannot create mtl target.");
             }
         }
-        System.out.println("Converting to backend: " + backendType);
+        //Input format
+        List<String> irlLines;
         try {
-            for (String line : irlLines) {
-                writer.write(machine.convertLine(line));
-                writer.write("\n");
-            }
-            writer.flush();
-            writer.close();
+            irlLines = Files.readAllLines(Paths.get(context.BASE_DIR + file)).stream().filter(
+                    str -> !str.startsWith("#")).collect(Collectors.toList());
         } catch (IOException e) {
-            throw new RuntimeException("Failed to write to target file.");
+            e.printStackTrace();
+            throw new RuntimeException("Cannot open IRL file for reading.");
         }
+        List<List<Pair<String, Integer>>> stepRegs = new ArrayList<>();
+        List<DiscreteOps> ops = new ArrayList<>();
+        List<List<String>> qualifiers = new ArrayList<>();
+        reparser.parseLines(irlLines, stepRegs, ops, qualifiers);
+        machine.registerAlloc(stepRegs);
+        reparser.translate(writer, machine, stepRegs, ops);
     }
 }

@@ -1,80 +1,24 @@
 #Translation protocol name
 x86-64 GAS syntax
 
-#String regex for variables
-::/REGEX-REG_VAR::_v[0-9]+
-::/REGEX-SAVED_VAR::[a-zA-Z][a-zA-Z0-9_]*
-::/REGEX-NUM::[0-9]*
-::/REGEX-FUNC_RETURN::return
+/REGEX : WSP : [\r\t\n ]*
+/REGEX : VAR : (0_|_v)[a-zA-Z0-9_\-]*
+/REGEX : LBL : __[a-zA-Z0-9_]*
+/REGEX : NUM : [0-9][0-9_]*
 
-#Define additional locations for substitution, with different names, matching the IRL_OP
-::/CONVERSION-IRL_OP_CONV::
-#register operations
-ADD: %REG_VAR = %REG_VAR + %REG_VAR
-MUL: %REG_VAR = %REG_VAR * %REG_VAR
-SUB: %REG_VAR = %REG_VAR - %REG_VAR
-DIV: %REG_VAR = %REG_VAR / %REG_VAR
-#Ensure variable is saved for future use
-STO: %SAVED_VAR <- %REG_VAR
-MRT: stack %NUM -> %SAVED_VAR
-MRT: stack %SAVED_VAR -> %REG_VAR
-#jumping and labels
-LBL: %0:
-RET: return
-::/END-IRL_OP_CONV::
-
-#Details about how to handle each, with given actions of ASSIGN_R, ASSIGN_M
-#These just assigns registers and memory locations
-#ASSIGN_M also takes a single value, for quantity
-
-::/RULES-IRL_OP_DEC::
-/INSTR: ADD
-\tADD %1, %0
-/INSTR: MUL
-\tPUSH rax
-\tPUSH rdx
-\tMOV %1, rax
-\tMUL %2
-\tMOV rax, %0
-\tPOP rdx
-\tPOP rax
-/INSTR: SUB
-\tMOV %1, %0
-\tSUB %0, %2
-/INSTR: DIV
-\tPUSH rax
-\tPUSH rdx
-\tMOV %1, rax
-\tDIV %2
-\tMOV rax, %0
-\tPOP rdx
-\tPOP rax
-/INSTR: MOD
-\t%ASSIGN_R %0
-\tPUSH rax
-\tPUSH rdx
-\tMOV %1, rax
-\tDIV %2
-\tMOV rdx, %0
-\tPOP rdx
-\tPOP rax
-/INSTR: STO
-\tPUSH rax
-\tMOV %1, rax
-\tMOV [%MEM:%0], rax
-\tPOP rax
-/INSTR: MRT
-\t%ASSIGN_M %0 %1
-/INSTR: LBL
-.L_%0:
-/INSTR: RET
-\tRET
-::/END-IRL_OP_DEC::
-
-#Interpreting variables.
-
-::/CONST-DATA_LABEL::\.data
-::/CONST-CODE_LABEL::\.text
-
-::/CONST-ENTRY_POINT::__F_hello0
-::/CONST-ENTRY_LABEL::main
+/ACTION : ADD : %VAR%%WSP%=%WSP%%VAR%%WSP%+%WSP%%VAR%
+/ACTION : SUB : %VAR%%WSP%=%WSP%%VAR%%WSP%-%WSP%%VAR%
+/ACTION : MUL : %VAR%%WSP%=%WSP%%VAR%%WSP%*%WSP%%VAR%
+/ACTION : DIV : %VAR%%WSP%=%WSP%%VAR%%WSP%/%WSP%%VAR%
+/ACTION : MOD : %VAR%%WSP%=%WSP%%VAR%%WSP%%%%WSP%%VAR%
+/ACTION : RESERVE : var_ec%WSP%%VAR%%WSP%->%WSP%%VAR%
+/ACTION : STORE : %VAR%%WSP%<-%WSP%%VAR%
+/ACTION : PUSH : push%WSP%%VAR%
+/ACTION : PUSH : pop%WSP%%VAR%
+/ACTION : LABEL : %LBL%%WSP%:
+/ACTION : GOTO : hop%WSP%%LBL%
+/ACITON : CZGOTO : IFZ%WSP%%VAR%%WSP%hop%WSP%%LBL%
+/ACTION : FUNC_CALL_START : callbegin
+/ACTION : FUNC_CALL_END : callrestore
+/ACTION : RETURN : return%WSP%%VAR%
+/ACTION : RETURN2 : return

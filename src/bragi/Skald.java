@@ -327,7 +327,7 @@ public class Skald implements SkaldComponent {
         return match(check, 0);
     }
     public List<Integer> match(String check, int start) {
-        return dfa.process(check, start);
+        return nfa.process(check, start);
     }
 
     public void compile() {

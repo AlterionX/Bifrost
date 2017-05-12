@@ -21,15 +21,10 @@
 
         %F :
 
-        scopein
         __F_%0%GEF:
-        scopein
         %OUTPUT2
-        scopein
         %OUTPUT1
         return
-        scopeout
-        scopeout
 
     /END
 /END
@@ -40,6 +35,7 @@
         callbegin
         %OUTPUT
         %F = call %0
+        pop %SYM_PROPERTY:%0:function:paramSize%
         callrestore
 
     /END
@@ -47,17 +43,16 @@
 /DECODE SEQ
     /CATCHALL
 
-        %F :
-        scopein
+        %F:
         %OUTPUT
-        scopeout
+
 
     /END
 /END
 /DECODE STMT
     /CATCHALL
 
-        %F :
+        %F:
         %OUTPUT
 
     /END
@@ -65,13 +60,13 @@
 /DECODE VAR_ACCSS
     /COND 1 L_BRACK
 
-        %F : %1
+        %F: %SYM_FIND:%1:var%
         %OUTPUT
 
     /END
     /CATCHALL
 
-        %F : %0
+        %F: %SYM_FIND:%0:var%
         %OUTPUT
 
     /END
@@ -80,14 +75,14 @@
     /COND 1 L_BRACK
 
         %F : %4
-        stack %0 * %2 -> %F
+        stack %0 * %2 -> %SYM_FIND:%4:var%
         %OUTPUT
 
     /END
     /CATCHALL
 
         %F : %1
-        var_dec %SYM_PROPERTY:%0:type:sizeof% -> %F
+        var_ec %SYM_PROPERTY:%0:type:sizeof% -> %SYM_FIND:%1:var%
         %OUTPUT
 
     /END
@@ -228,6 +223,12 @@
     /END
 /END
 /DECODE NAME
+    /COND -1 BASE
+
+        %F: %SYM_FIND:%~:var%
+        %OUTPUT
+
+    /END
     /CATCHALL
 
         %F : %~
@@ -308,16 +309,16 @@
     /CATCHALL
 
         %F:
-        scopein
+
         __LOOP_COND%GEL:
         %OUTPUT1
         IFZ %0 hop __LOOP_END%RGEL
-        scopein
+
         %OUTPUT1
-        scopeout
+
         hop __LOOP_COND%RGEL
         __LOOP_END%RGEL:
-        scopeout
+
 
     /END
 /END
@@ -325,18 +326,18 @@
     /CATCHALL
 
         %F:
-        scopein
+
         hop __LOOP_START%GEL
         __LOOP_COND%RGEL:
         %OUTPUT1
         IFZ %0 hop __LOOP_END%RGEL
         __LOOP_START%RGEL:
-        scopein
+
         %OUTPUT1
-        scopeout
+
         hop __LOOP_COND%RGEL
         __LOOP_END%RGEL:
-        scopeout
+
 
     /END
 /END
@@ -350,7 +351,7 @@
         %OUTPUT1
         IFZ %0 hop __LOOP_END%RGEL
         hop __LOOP_START%RGEL
-        __LOOP_TRAILING:
+        __LOOP_TRAILING%RGEL:
         %OUTPUT1
         hop __LOOP_COND%REGL
         __LOOP_START%RGEL:

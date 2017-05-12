@@ -39,6 +39,6 @@ public class ConstantifyStag extends Stag {
 
     @Override
     public String getWalkerName() {
-        return "Constantify Modifier -- TODO";
+        return "Constantify Optimizer -- TODO";
     }
 }

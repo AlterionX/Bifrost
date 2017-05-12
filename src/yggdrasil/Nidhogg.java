@@ -29,7 +29,7 @@ public class Nidhogg {
         }
         return true;
     }
-    public boolean hasSym(String symbol, String qualifier, int offset) {
+    public String hasSym(String symbol, String qualifier, int offset) {
         if (offset != -1) {
             Optional<Nastrond> scope = Optional.of(currentScope);
             for (int i = 0; i < offset; i++) {
@@ -38,9 +38,9 @@ public class Nidhogg {
             if (!scope.isPresent()) {
                 throw new RuntimeException("No scope!");
             }
-            return scope.get().getSym(symbol, qualifier).isPresent();
+            return scope.get().getSym(symbol, qualifier).isPresent() ? scope.get().getPrefix() + symbol : null;
         }
-        return root.getSym(symbol, qualifier).isPresent();
+        return root.getSym(symbol, qualifier).isPresent() ? root.getPrefix() + symbol : null;
     }
     public void addSymProperty(String symbol, String qualifier, String property, String data) {
         currentScope.getSymScope(symbol, qualifier).ifPresent(scope -> scope.modSymAttribute(symbol, qualifier, property, data));
@@ -89,5 +89,12 @@ public class Nidhogg {
             return -1;
         }
         return level;
+    }
+
+    /**
+     * Mangles names so symbols only fit only within their specific scope.
+     */
+    public void mangle() {
+        root.mangle("0");
     }
 }

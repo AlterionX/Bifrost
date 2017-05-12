@@ -1,6 +1,7 @@
 package midgard;
 
 import yggdrasil.Branch;
+import yggdrasil.Cosmos;
 import yggdrasil.Seedling;
 import yggdrasil.Yggdrasil;
 
@@ -14,31 +15,46 @@ import java.util.Stack;
  *
  * The parser.
  */
-public class Jormungandr {
-    //AST, CFG data
-    private Yggdrasil parent;
+public class Jormungandr extends Cosmos {
+    //Stable fields
     private Skadi skadi;
-    //Parser logic
-    public Jormungandr(Yggdrasil parent) {
-        this.parent = parent;
-        skadi = new Skadi(parent, parent.BASE_DIR + parent.TARGET + parent.PARSER_DEC_EXTENSION);
+
+    /**
+     * Initializes Jormungandr.
+     * @param context The context data, AST, and symtable
+     */
+    public Jormungandr(Yggdrasil context) {
+        super(context);
+        System.out.println("Jormungandr configured.");
     }
+    /**
+     * Initialize the parser tables.
+     */
+    protected void configure() {
+        skadi = new Skadi(context);
+    }
+
+    /**
+     * Based on the rules in Skadi, parse the lexeme stream. Then use the rule to shift and reduce.
+     * @return Whether or not the file is free of syntax errors.
+     */
     public boolean parse() {
-        System.out.println("/*************************Generating AST***************************/");
+        System.out.println("Converting source code to AST");
+        if (context.DEBUG) System.out.println("/*************************Generating AST***************************/");
         Stack<Branch> productionStack = new Stack<>();
         Stack<Integer> stateStack = new Stack<>();
-        Branch curr = parent.nextToken();
-        Branch next = parent.nextToken();
+        Branch curr = context.nextToken();
+        Branch next = context.nextToken();
         stateStack.push(0);
         productionStack.push(null);
         boolean failed = false;
         while (true) {
             Integer actionEncoding = skadi.progressAndEncode(stateStack.peek(), curr, next);
-            if (parent.DEBUG) System.out.println("Processing stack: " + productionStack + ", state stack: " + stateStack + ", lookahead 1: " + curr);
-            if (parent.DEBUG) System.out.println("Action to take during this step: " + actionEncoding);
+            if (context.DEBUG) System.out.println("Processing stack: " + productionStack + ", state stack: " + stateStack + ", lookahead 1: " + curr);
+            if (context.DEBUG) System.out.println("Action to take during this step: " + actionEncoding);
             if (skadi.isComplete(actionEncoding, curr)) {
                 if (productionStack.size() == 3 && stateStack.size() == 3) {
-                    if (parent.DEBUG) System.out.println("Parse complete");
+                    if (context.DEBUG) System.out.println("Parse complete");
                     productionStack.pop();
                     stateStack.pop();
                     break;
@@ -49,13 +65,13 @@ public class Jormungandr {
                 break;
             }
             if (skadi.isReduce(actionEncoding)) { //REDUCE
-                CFGRule rule = skadi.reduceRule(actionEncoding, curr, next);
+                CFGProduction rule = skadi.getReduceProduction(actionEncoding, curr, next);
                 rule.ruleReduce(stateStack, productionStack);
                 stateStack.push(skadi.reduceProgress(stateStack.peek(), productionStack.peek()));
             } else if (skadi.isShift(actionEncoding)) { //SHIFT
                 productionStack.push(curr);
                 curr = next;
-                next = parent.nextToken();
+                next = context.nextToken();
                 stateStack.push(skadi.decode(actionEncoding));
             } else { //ERROR
                 System.out.println("Syntax error on reading " + curr + ", and " + next + ", with stack " + productionStack + ".");
@@ -64,10 +80,11 @@ public class Jormungandr {
             }
         }
         if (!failed) {
-            parent.addCore(productionStack.peek());
+            context.addCore(productionStack.peek());
+        } else {
             Seedling.simplePrint(productionStack.peek());
         }
-        System.out.println("/******************************************************************/");
+        if (context.DEBUG) System.out.println("/******************************************************************/");
         return !failed;
     }
 }

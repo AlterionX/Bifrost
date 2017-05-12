@@ -1,5 +1,6 @@
 package ragnarok;
 
+import yggdrasil.Cosmos;
 import yggdrasil.Yggdrasil;
 
 import java.io.IOException;
@@ -8,20 +9,30 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class Idavoll {
+public class Idavoll extends Cosmos{
     private String assembler = "gcc";
     private String[] flags;
     private Map<String, ArrayList<String>> flagArgs;
 
     private String base_dir;
 
-    private Yggdrasil parent;
-
-    public Idavoll(Yggdrasil parent) {
-        this.parent = parent;
+    public Idavoll(Yggdrasil context) {
+        super(context);
+    }
+    protected void configure() {
+        //throw new RuntimeException("Unimplemented.");
     }
 
     public void create(String... files) {
+        System.out.println("Compilation beginning.");
+
+
+        boolean implmented = false;
+        if (!implmented) {
+            System.out.println("Backend conversion not yet implemented. Compilation of assembly will not run.");
+            System.exit(-1);
+        }
+
         List<String> cmd = new ArrayList<>();
         cmd.add(assembler);
         for (String flag : flags) {
@@ -31,7 +42,7 @@ public class Idavoll {
             }
         }
         ProcessBuilder pb = new ProcessBuilder(cmd).inheritIO()
-                .directory(new java.io.File(base_dir == null ? parent.BASE_DIR : base_dir));
+                .directory(new java.io.File(base_dir == null ? context.BASE_DIR : base_dir));
         Collections.addAll(cmd, files);
         System.out.print("ProcessBuilder launching with the following process: ");
         System.out.println(pb.command());

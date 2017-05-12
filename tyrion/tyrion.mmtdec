@@ -1,0 +1,30 @@
+x86-64 Intel Processor
+
+#Start with REGS, PROPERTY, NAME, and IRL_OP, is the definition of a machine
+
+REGS: 8
+REGSIZE: 64
+PROPERTY 0: rax
+PROPERTY 1: rcx
+PROPERTY 2: rdx
+PROPERTY 3: rbx
+PROPERTY 4: rsp
+PROPERTY 5: rbp
+PROPERTY 6: rsi
+PROPERTY 7: rdi
+PROPERTY 0: accumulator
+PROPERTY 1: counter
+PROPERTY 2: data
+PROPERTY 3: base
+PROPERTY 4: stackpointer
+PROPERTY 5: basepointer
+PROPERTY 6: sourceindex
+PROPERTY 7: destinationindex
+NAME 0: rax
+NAME 1: rcx
+NAME 2: rdx
+NAME 3: rbx
+NAME 4: rsp
+NAME 5: rbp
+NAME 6: rsi
+NAME 7: rdi

@@ -5,6 +5,8 @@ import yggdrasil.*;
 import java.util.ArrayList;
 
 public class VarDeclStag extends Stag {
+    private int suffix = 0;
+
     public VarDeclStag(Yggdrasil parent) {
         super(parent, false);
     }
@@ -16,16 +18,12 @@ public class VarDeclStag extends Stag {
     @Override
     protected boolean onUpEnter(Branch branch) {
         if (branch.getTag() == parent.tagEncode("VAR_DEC", TagPriority.PAR)) {
-            System.out.println("We have here, a declaration of war.");
-            if (!parent.hasSym(((Leaf) branch.getChildren().get(0)).getSubstring(), "type")) {
-                throw new RuntimeException("This type, " + ((Leaf) branch.getChildren().get(0)).getSubstring() +
-                        " is not recognized.");
+            if (parent.hasSym(((Leaf) branch.getChildren().get(0)).getSubstring(), "type") == null) {
+                throw new RuntimeException("Variable contains unknown type.");
             }
             parent.addSym(((Leaf) branch.getChildren().get(1)).getSubstring(), "var");
             parent.addSymProperty(((Leaf) branch.getChildren().get(1)).getSubstring(), "var",
                     "vartype", ((Leaf) branch.getChildren().get(0)).getSubstring());
-            System.out.println("Declared " + ((Leaf) branch.getChildren().get(1)).getSubstring() + ": " +
-                    parent.getSym(((Leaf) branch.getChildren().get(1)).getSubstring(), "var"));
         }
         return false;
     }
@@ -36,11 +34,10 @@ public class VarDeclStag extends Stag {
                         branch.getTag() == parent.tagEncode("BASE", TagPriority.SUB)
         )) {
             //Check for decl
-            if (!parent.hasSym(((Leaf) child).getSubstring(), "var")) {
+            if (parent.hasSym(((Leaf) child).getSubstring(), "var") == null) {
                 throw new RuntimeException("Undeclared variable " + ((Leaf) child).getSubstring() + ".");
             }
             child.setLevel(parent.getSymOffset(((Leaf) child).getSubstring(), "var"));
-            Seedling.simplePrint(child);
         }
         return false;
     }

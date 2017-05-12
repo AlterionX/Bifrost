@@ -4,13 +4,13 @@ import yggdrasil.*;
 
 import java.util.*;
 
-public class CFGRule implements Iterable<Integer> {
+public class CFGProduction implements Iterable<Integer> {
     private Yggdrasil parent;
     private Integer left;
     private List<Integer> rule;
     private List<List<String>> actions;
 
-    public CFGRule(String left, Iterable<String> rightSeries, Yggdrasil parent) {
+    public CFGProduction(String left, Iterable<String> rightSeries, Yggdrasil parent) {
         this.parent = parent;
         //Error checking
         if (left.isEmpty()) throw new RuntimeException("False cmd.");
@@ -28,7 +28,7 @@ public class CFGRule implements Iterable<Integer> {
             }
         }
     }
-    public CFGRule(int left, List<Integer> rule, Yggdrasil parent) {
+    public CFGProduction(int left, List<Integer> rule, Yggdrasil parent) {
         this.parent = parent;
         this.left = left;
         this.rule = new ArrayList<>();
@@ -134,11 +134,11 @@ public class CFGRule implements Iterable<Integer> {
     }
     //Object overrides, used for standard containers and Collections API
     public boolean equals(Object o) {
-        if (o instanceof CFGRule &&
-                Objects.equals(this.left, ((CFGRule) o).left) &&
-                this.rule.size() == ((CFGRule) o).rule.size()) {
+        if (o instanceof CFGProduction &&
+                Objects.equals(this.left, ((CFGProduction) o).left) &&
+                this.rule.size() == ((CFGProduction) o).rule.size()) {
             for (int i = 0; i < this.rule.size(); i++) {
-                if (!this.rule.get(i).equals(((CFGRule) o).rule.get(i))) {
+                if (!this.rule.get(i).equals(((CFGProduction) o).rule.get(i))) {
                     return false;
                 }
             }

@@ -1,6 +1,6 @@
 package midgard;
 
 
-public enum CFGRuleType {
+public enum CFGProductionType {
     SBNF, BNF, CNF, EBNF, CFG
 }
