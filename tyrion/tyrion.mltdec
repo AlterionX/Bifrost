@@ -1,11 +1,15 @@
 #Translation protocol name
-x86-64 GAS syntax
+/PN: x86-64 GAS syntax
 
+#Reserved keytokens : /REGEX, /ACTION, /INTERPRET, /PN
+
+[REGEX]
 /REGEX : WSP : [\r\t\n ]*
 /REGEX : VAR : (0_|_v)[a-zA-Z0-9_\-]*
 /REGEX : LBL : __[a-zA-Z0-9_]*
 /REGEX : NUM : [0-9][0-9_]*
 
+[ACTION]
 /ACTION : ADD : %VAR%%WSP%=%WSP%%VAR%%WSP%+%WSP%%VAR%
 /ACTION : SUB : %VAR%%WSP%=%WSP%%VAR%%WSP%-%WSP%%VAR%
 /ACTION : MUL : %VAR%%WSP%=%WSP%%VAR%%WSP%*%WSP%%VAR%
@@ -22,3 +26,6 @@ x86-64 GAS syntax
 /ACTION : FUNC_CALL_END : callrestore
 /ACTION : RETURN : return%WSP%%VAR%
 /ACTION : RETURN2 : return
+
+[INTERPRETATION]
+/INTERPRET : ADD : ADD

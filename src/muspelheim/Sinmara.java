@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -17,7 +18,6 @@ public class Sinmara extends Cosmos {
     List<Set<String>> stepVarSets = new ArrayList<>();
     private String targetAsm;
 
-
     public Sinmara(Yggdrasil context) {
         super(context);
         System.out.println("Sinmara configured.");
@@ -25,8 +25,6 @@ public class Sinmara extends Cosmos {
 
     @Override
     protected void configure() {
-
-
         List<String> configLines;
         try {
             configLines = Files.readAllLines(Paths.get(
@@ -42,8 +40,13 @@ public class Sinmara extends Cosmos {
         if (configLines.size() == 0) {
             throw new RuntimeException("No input detected for file.");
         }
-        if (!configLines.get(0).startsWith("::")) {
-            targetAsm = configLines.remove(0);
+        //Parse lines
+        for (String line : configLines) {
+            if (line.startsWith("/")) {
+                System.out.println(Arrays.toString(line.split(":", 3)));
+            } else if (line.startsWith("[") && line.endsWith("]")) {
+                System.out.println("Beginning topic (unsupported) " + line + ".");
+            }
         }
     }
 

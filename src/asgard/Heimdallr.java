@@ -2,6 +2,7 @@ package asgard;
 
 import yggdrasil.Branch;
 import yggdrasil.Cosmos;
+import yggdrasil.Seedling;
 import yggdrasil.Yggdrasil;
 
 import javax.tools.JavaCompiler;
@@ -65,10 +66,10 @@ public class Heimdallr extends Cosmos {
         URL base;
         try {
             if (stagFiles.get(0).startsWith("PATH=")) {
-                base = Paths.get(context.BASE_DIR + stagFiles.get(0).substring("PATH=".length()).trim()).toUri().toURL();
+                base = Paths.get(context.BASE_DIR + stagFiles.get(0).substring("PATH=".length()).trim()).toAbsolutePath().toUri().toURL();
                 stagFiles.remove(0);
             } else {
-                base = Paths.get(context.BASE_DIR).toUri().toURL();
+                base = Paths.get(context.BASE_DIR).toAbsolutePath().toUri().toURL();
             }
         } catch (MalformedURLException e) {
             e.printStackTrace();
@@ -112,11 +113,13 @@ public class Heimdallr extends Cosmos {
             }
             int errcode = 0;
             try {
+                System.out.println(
+                        Paths.get(base.toURI()).toAbsolutePath().toString() + ";./src/;.");
                 errcode = compiler.run(null, null, null,
                         "-sourcepath",
-                        Paths.get(base.toURI()).toAbsolutePath().toString() + ";./src/",
+                        Paths.get(base.toURI()).toAbsolutePath().toString() + ";./src/;.",
                         "-classpath",
-                        Paths.get(base.toURI()).toAbsolutePath().resolve("./out/").toAbsolutePath() + ";" + "./out/",
+                        Paths.get(base.toURI()).toAbsolutePath().resolve("./out/").toAbsolutePath() + ";./out/;.",
                         "-d",
                         Paths.get(base.toURI()).toAbsolutePath().resolve("./out/").toAbsolutePath().toString(),
                         base.getPath() + targetStag + ".java");
@@ -148,6 +151,9 @@ public class Heimdallr extends Cosmos {
             Stag.startWalk(walker, root, true);
         }
         context.mangleSyms();
+        System.out.println("/*******************************AST********************************/");
+        Seedling.simplePrint(root);
+        System.out.println("/******************************************************************/");
         irlGen.prime(file);
         System.out.println("Walking " + irlGen.getWalkerName());
         System.out.println("Converting AST to IR code");
