@@ -1,14 +1,12 @@
-import asgard.ScopeChanger;
 import asgard.Stag;
+import tagtable.TagPriority;
+import tagtable.TagTable;
 import yggdrasil.*;
 
-import java.util.ArrayList;
-
 public class VarDeclStag extends Stag {
-    private int suffix = 0;
 
-    public VarDeclStag(Yggdrasil parent) {
-        super(parent, false);
+    public VarDeclStag(PathHolder pathHolder, TagTable tagTable, Nidhogg symTable) {
+        super(tagTable, pathHolder, symTable, false);
     }
 
     @Override
@@ -17,27 +15,25 @@ public class VarDeclStag extends Stag {
     }
     @Override
     protected boolean onUpEnter(Branch branch) {
-        if (branch.getTag() == parent.tagEncode("VAR_DEC", TagPriority.PAR)) {
-            if (parent.hasSym(((Leaf) branch.getChildren().get(0)).getSubstring(), "type") == null) {
-                throw new RuntimeException("Variable contains unknown type.");
-            }
-            parent.addSym(((Leaf) branch.getChildren().get(1)).getSubstring(), "var");
-            parent.addSymProperty(((Leaf) branch.getChildren().get(1)).getSubstring(), "var",
+        if (branch.getTag().equals(super.tagTable.addElseFindTag(TagPriority.PAR, "VAR_DEC"))) {
+            assert super.symTable.hasSym(((Leaf) branch.getChildren().get(0)).getSubstring(), "type", 0) != null :
+                    "Variable contains unknown type.";
+            super.symTable.addSym(((Leaf) branch.getChildren().get(1)).getSubstring(), "var", 0);
+            super.symTable.addSymProperty(((Leaf) branch.getChildren().get(1)).getSubstring(), "var",
                     "vartype", ((Leaf) branch.getChildren().get(0)).getSubstring());
         }
         return false;
     }
     @Override
     protected boolean onDownEnter(Branch branch, Branch child) {
-        if (child.getTag() == parent.tagEncode("NAME", TagPriority.SUB) && (
-                branch.getTag() == parent.tagEncode("VAR_ACCSS", TagPriority.SUB) ||
-                        branch.getTag() == parent.tagEncode("BASE", TagPriority.SUB)
+        if (child.getTag() == super.tagTable.addElseFindTag(TagPriority.PAR, "NAME") && (
+                branch.getTag().equals(super.tagTable.addElseFindTag(TagPriority.PAR, "VAR_ACCSS")) ||
+                        branch.getTag().equals(super.tagTable.addElseFindTag(TagPriority.PAR, "BASE"))
         )) {
             //Check for decl
-            if (parent.hasSym(((Leaf) child).getSubstring(), "var") == null) {
-                throw new RuntimeException("Undeclared variable " + ((Leaf) child).getSubstring() + ".");
-            }
-            child.setLevel(parent.getSymOffset(((Leaf) child).getSubstring(), "var"));
+            assert super.symTable.hasSym(((Leaf) child).getSubstring(), "var", 0) != null :
+                    "Undeclared variable " + ((Leaf) child).getSubstring() + ".";
+            child.setLevel(super.symTable.getOffset(((Leaf) child).getSubstring(), "var"));
         }
         return false;
     }

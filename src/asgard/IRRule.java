@@ -2,18 +2,17 @@ package asgard;
 
 import yggdrasil.Branch;
 import yggdrasil.Leaf;
+import yggdrasil.Nidhogg;
 import yggdrasil.Yggdrasil;
 
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
 /**
  * A single moment of transformation belonging to a rule chunk.
  */
-public class IRRule {
-    private String rule;
-    private boolean isProduction;
+class IRRule {
+    private final String rule;
     private IRChunk chunk = new IRChunk();
 
     /**
@@ -22,7 +21,7 @@ public class IRRule {
      */
     public IRRule(String rule) {
         if (rule.startsWith("%F :") || rule.startsWith("%F:")) {
-            isProduction = true;
+            boolean isProduction = true;
             this.rule = rule.substring(rule.indexOf(":") + 1).trim();
         } else {
             this.rule = rule;
@@ -47,10 +46,10 @@ public class IRRule {
      * @param core The list of outputs from children nodes.
      * @param fToken The token of the production rule.
      * @param additions The new String to append the transformations to.
-     * @param context The context data, AST, and symtable.
+     * @param symTable The symtable.
      */
     public void generateString(Branch branch, List<String> elements, LinkedList<StringBuilder> core,
-                               StringBuilder fToken, StringBuilder additions, Yggdrasil context) {
+                               StringBuilder fToken, StringBuilder additions, Nidhogg symTable) {
         //Otherwise, normal
         for (int i = 0; i < rule.length(); i++) {
             switch (rule.charAt(i)) {
@@ -157,13 +156,14 @@ public class IRRule {
                                     i++;
                                 }
                                 String[] symaccess = disperse(rule.substring(start, i), branch, elements);
-                                if (context.hasSym(symaccess[0], symaccess[1]) == null) {
+                                if (symTable.hasSym(symaccess[0], symaccess[1], 0).isEmpty()) {
                                     throw new RuntimeException("Symbol " + symaccess[0] + ", with modifier " + symaccess[1] + " does not exist.");
                                 }
-                                if (context.getSymProperty(symaccess[0], symaccess[1], symaccess[2]).isEmpty()) {
-                                    throw new RuntimeException("Symbol " + symaccess[0] + ", with modifier " + symaccess[1] + " does not have property " + symaccess[2] + ".");
-                                }
-                                additions.append(context.getSymProperty(symaccess[0], symaccess[1], symaccess[2]));
+                                additions.append(symTable.getSymProperty(symaccess[0], symaccess[1], symaccess[2]).orElseThrow(
+                                        () -> new RuntimeException(
+                                                "Symbol " + symaccess[0] + ", with modifier " + symaccess[1] + " does not have property " + symaccess[2] + "."
+                                        )
+                                ));
                                 i++;
                             } else if (rule.substring(i).startsWith("SYM_FIND:")) { //%SYM_FIND:symbol%
                                 i += "SYM_FIND:".length();
@@ -175,10 +175,9 @@ public class IRRule {
                                     i++;
                                 }
                                 String[] symaccess = disperse(rule.substring(start, i), branch, elements);
-                                String sym = context.hasSym(symaccess[0], symaccess[1]);
-                                if (sym == null) {
-                                    throw new RuntimeException("Symbol " + symaccess[0] + ", with modifier " + symaccess[1] + " does not exist.");
-                                }
+                                String sym = symTable.hasSym(symaccess[0], symaccess[1], 0);
+                                assert sym != null :
+                                        "Symbol " + symaccess[0] + ", with modifier " + symaccess[1] + " does not exist.";
                                 additions.append(sym);
                                 i++;
                             }

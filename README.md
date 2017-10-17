@@ -39,7 +39,7 @@ Of the seven stages, the first four are at a basic, working standard, provided w
 
 Being worked on: Parser and Lexer serialization, syntatic and semantic analysis engine, simple intermediate code optimization engine, simple machine code optimization engine.
 
-Future goals: LALR, LR parsing, a general fall back algorithm (Earley, CYK, etc.). Fully working sample project. Type-checking engine. Advanced versions of the other componenets. Alternative and extended input formats. Support literals within the context free grammar parser. Standardization of input formats. Improved performance.
+Future goals: LALR, LR parsing, a general fall back algorithm (Earley, CYK, etc.). Fully working sample project. Type-checking engine. Advanced versions of the other componenets. Alternative and extended input formats. Support literals within the tokenStream free grammar parser. Standardization of input formats. Improved performance.
 
 Project on hold for various IRL issues.
 

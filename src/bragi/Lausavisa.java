@@ -59,7 +59,7 @@ public class Lausavisa {
      *                 terminal of the second will be matched with the terminal of the first.
      * @return This NFA, having undergone these transformations
      */
-    public Lausavisa merge(Lausavisa nfaTwo, int strategy) {
+    public void merge(Lausavisa nfaTwo, int strategy) {
         tableIsStale = true;
         //System.out.println("Merging.");
         switch (strategy) {
@@ -81,7 +81,6 @@ public class Lausavisa {
                 nfaTwo.terminal.registerConnection(this.terminal, new SkaldPrim(true, false, false));
                 break;
         }
-        return this;
     }
     /**
      * Wraps the nfa as a Kleene star would affect it.
@@ -263,7 +262,7 @@ public class Lausavisa {
      * @param prim The input.
      * @return The DFA node representation of the NFA node set.
      */
-    private Stef registerNFADFATransitionEntry(Map<Stef, Pair<Set<Stef>, Map<SkaldPrim, Stef>>> dfaTable,
+    private void registerNFADFATransitionEntry(Map<Stef, Pair<Set<Stef>, Map<SkaldPrim, Stef>>> dfaTable,
                                                Stef dfaNode, Set<Stef> nfaProgression,
                                                SkaldPrim prim) {
         //System.out.println("DFA Node " + dfaNode + ", with input " + prim.generateString() + ", connected to NFA node set " + nfaProgression);
@@ -279,11 +278,12 @@ public class Lausavisa {
             }
             if (found) {
                 //Old entry, mark transition and complete
-                return markNFADFATransitionEntry(dfaNode, dfaModel, prim, dfaTable);
+                markNFADFATransitionEntry(dfaNode, dfaModel, prim, dfaTable);
+                return;
             }
         }
         //Entirely new DFA node
-        return markNFADFATransitionEntry(dfaNode, createNFADFATransitionNode(nfaProgression, dfaTable), prim, dfaTable);
+        markNFADFATransitionEntry(dfaNode, createNFADFATransitionNode(nfaProgression, dfaTable), prim, dfaTable);
     }
     /**
      * Creates a node for the final DFA and places this in the table.
@@ -323,7 +323,7 @@ public class Lausavisa {
      * @param prim The input value.
      * @return The set of nodes reached through the input
      */
-    public Set<Stef> closure(Set<Stef> headNodes, SkaldPrim prim) {
+    private Set<Stef> closure(Set<Stef> headNodes, SkaldPrim prim) {
         for (Stef node : table.keySet()) {
             node.mark = 0;
         }

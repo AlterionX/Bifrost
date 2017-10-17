@@ -5,15 +5,15 @@ import bragi.bragi.skaldparts.SkaldPrim;
 import java.util.*;
 
 public class Stef {
-    Map<SkaldPrim, Set<Stef>> shiftMatrix = new HashMap<>();
+    final Map<SkaldPrim, Set<Stef>> shiftMatrix = new HashMap<>();
     int index = 0;
     int mark = 0;
 
     private String nfaTerminationRegExString;
 
-    ArrayList<Boolean> negateLookAround = new ArrayList<>();
-    ArrayList<Boolean> reverseLookAround = new ArrayList<>();
-    ArrayList<Drottkvaett> visur = new ArrayList<>();
+    final ArrayList<Boolean> negateLookAround = new ArrayList<>();
+    final ArrayList<Boolean> reverseLookAround = new ArrayList<>();
+    final ArrayList<Drottkvaett> visur = new ArrayList<>();
 
     Stef() {}
     Stef(Stef next, SkaldPrim prim) {

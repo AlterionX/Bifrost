@@ -1,20 +1,23 @@
 package asgard;
 
-import yggdrasil.Branch;
-import yggdrasil.Seedling;
-import yggdrasil.Yggdrasil;
+import tagtable.TagTable;
+import yggdrasil.*;
 
 public abstract class Stag {
-    protected Yggdrasil parent;
-    private ScopeChanger scopeChanger;
+    protected final TagTable tagTable;
+    protected final PathHolder holder;
+    protected final Nidhogg symTable;
+    private final ScopeChanger scopeChanger;
     /**
      * Construct the Stag.
-     * @param parent context data, AST, and symtable
+     * @param tagTable tags related to the program
      * @param initial If is the first stag
      */
-    public Stag(Yggdrasil parent, boolean initial) {
-        this.parent = parent;
-        scopeChanger = new ScopeChanger(parent, initial);
+    protected Stag(TagTable tagTable, PathHolder holder, Nidhogg symTable, boolean initial) {
+        this.tagTable = tagTable;
+        this.holder = holder;
+        this.symTable = symTable;
+        this.scopeChanger = new ScopeChanger(tagTable, holder, symTable, initial);
     }
 
     /**
@@ -38,7 +41,7 @@ public abstract class Stag {
      * Walk the tree, triggering all of the hooks.
      * @param branch The branch to walk through.
      */
-    protected void walk(Branch branch) {
+    private void walk(Branch branch) {
         scopeChanger.onUpEnter(branch);
         if (!onUpEnter(branch)) {
             for (Seedling child : branch.getChildren()) {

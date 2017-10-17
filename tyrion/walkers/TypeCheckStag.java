@@ -1,10 +1,12 @@
 import asgard.Stag;
+import tagtable.TagTable;
 import yggdrasil.Branch;
-import yggdrasil.Yggdrasil;
+import yggdrasil.Nidhogg;
+import yggdrasil.PathHolder;
 
 public class TypeCheckStag extends Stag {
-    public TypeCheckStag(Yggdrasil parent) {
-        super(parent, false);
+    public TypeCheckStag(PathHolder pathHolder, TagTable tagTable, Nidhogg symTable) {
+        super(tagTable, pathHolder, symTable, false);
     }
 
     @Override

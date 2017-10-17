@@ -2,15 +2,16 @@ package niflheim;
 
 import bragi.Skald;
 import javafx.util.Pair;
+import tagtable.Tag;
+import tagtable.TagTable;
 import yggdrasil.Cosmos;
-import yggdrasil.TagPriority;
-import yggdrasil.Yggdrasil;
+import tagtable.TagPriority;
+import yggdrasil.PathHolder;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,7 +23,7 @@ import java.util.stream.Collectors;
  * The rule manager of the lexer. Parses the lexer declaration file.
  */
 public class Hel extends Cosmos{
-    //Public static data
+    //region Static data
     public static final String DEFAULT_ALPH = "\t\n\r !\"#$%&'()*+,-./" +
             "0123456789" +
             ":;<=>?@" +
@@ -35,17 +36,20 @@ public class Hel extends Cosmos{
     //Static command prefixes
     private final static String ALPHA_CMD_PRE = "%ALPHA";
     private final static String IGNOR_CMD_PRE = "%IGNORE";
-    //Stable fields
+    //endregion
+
+    //region Stable fields
     private String alphabet;
-    private ArrayList<Pair<Integer, Skald>> parsers;
-    private Skald ignoreParser;
+    private ArrayList<Pair<Tag, Skald>> regexes;
+    private Skald ignoreRegex;
+    //endregion
 
     /**
      * Initializes Hel.
-     * @param context The context data, AST, and symtable.
+     * @param context The context data, AST, tag table, and symtable.
      */
-    public Hel(Yggdrasil context) {
-        super(context);
+    public Hel(PathHolder context, TagTable tagTable) {
+        super(context, tagTable);
         System.out.println("Hel configured.");
     }
 
@@ -54,14 +58,13 @@ public class Hel extends Cosmos{
      */
     protected void configure() {
         //Init variables, as this is a call in the super class, this class's variable haven't been initialized yet
-        parsers = new ArrayList<>();
+        regexes = new ArrayList<>();
         //Begin configuration
         List<String> lines;
         try {
-            lines = Files.readAllLines(Paths.get(
-                    context.BASE_DIR + context.TARGET + context.LEXER_DEC_EXTENSION
-            )).stream().map(String::trim)
-                    .filter(str -> !str.isEmpty() && str.charAt(0) != '#').collect(Collectors.toList());
+            lines = Files.readAllLines(
+                    Paths.get(getContext().BASE_DIR + getContext().TARGET + getContext().LEXER_DEC_EXTENSION))
+                            .stream().map(String::trim).filter(str -> !str.isEmpty() && str.charAt(0) != '#').collect(Collectors.toList());
         } catch (IOException e) {
             e.printStackTrace();
             lines = new ArrayList<>();
@@ -80,9 +83,7 @@ public class Hel extends Cosmos{
                 switch (halves[0]) {
                     case ALPHA_CMD_PRE:
                         System.out.println("Parsing alphabet");
-                        if (alphabet != null) {
-                            throw new RuntimeException("Repeated alphabet declaration.");
-                        }
+                        assert alphabet != null : "Repeated alphabet declaration.";
                         String alphaDec = (halves.length < 2 ? "" : halves[1]).trim();
                         if (alphaDec.length() == 0) {
                             alphabet = DEFAULT_ALPH;
@@ -97,37 +98,35 @@ public class Hel extends Cosmos{
                         }
                         break;
                     case IGNOR_CMD_PRE:
-                        if (ignoreParser != null) {
-                            ignoreParser = new Skald(
-                                    "(" + ignoreParser.getPattern() + ")|(" + halves[1] + ")",
+                        if (ignoreRegex != null) {
+                            ignoreRegex = new Skald(
+                                    String.format("(%s)|(%s)", ignoreRegex.getPattern(), halves[1]),
                                     Hel.DEFAULT_ALPH
                             );
                         } else {
-                            ignoreParser = new Skald(halves[1], Hel.DEFAULT_ALPH);
+                            ignoreRegex = new Skald(halves[1], Hel.DEFAULT_ALPH);
                         }
                         break;
                     default:
-                        throw new RuntimeException("Unrecognized command : " + halves[0] + ": " + halves[1]);
+                        throw new RuntimeException(String.format("Unrecognized command : %s: %s", halves[0], halves[1]));
                 }
             } else {
                 //Is a rule
-                context.addTagIfAbsent(halves[0], TagPriority.LEX);
-                parsers.add(new Pair<>(context.tagEncode(halves[0], TagPriority.LEX), new Skald(halves[1], alphabet)));
+                regexes.add(new Pair<>(getTagTable().addElseFindTag(TagPriority.LEX, halves[0]), new Skald(halves[1], alphabet)));
             }
         }
         //TODO combine DFAs/NFAs into one
-        if (context.DEBUG) printRegExs();
+        if (getContext().DEBUG) printRegExs();
     }
     /**
-     * Print all regex decompositions of the parsers that were initialized.
+     * Print all regex decompositions of the regexes that were initialized.
      */
     private void printRegExs() {
-        if (ignoreParser != null) {
-            System.out.println(IGNOR_CMD_PRE + ": " + ignoreParser.generateString());
+        if (ignoreRegex != null) {
+            System.out.println(IGNOR_CMD_PRE + ": " + ignoreRegex.generateString());
         }
-        for (Pair<Integer, Skald> parserSet : parsers) {
-            System.out.println(context.tagDecode(parserSet.getKey(), TagPriority.LEX) +
-                    ": " + parserSet.getValue().generateString());
+        for (Pair<Tag, Skald> parserSet : regexes) {
+            System.out.println(String.format("%s: %s", parserSet.getKey(), parserSet.getValue().generateString()));
         }
     }
 
@@ -135,14 +134,14 @@ public class Hel extends Cosmos{
      * Get the special ignore parser.
      * @return A parser that matches ignored substrings.
      */
-    public Skald getIgnoreParser() {
-        return ignoreParser;
+    public Skald getIgnoreRegex() {
+        return ignoreRegex;
     }
     /**
-     * Get a list of parsers and their corresponding tags.
-     * @return A list of pairs of parsers and the tag that they match.
+     * Get a list of regexes and their corresponding tags.
+     * @return A list of pairs of regexes and the tag that they match.
      */
-    public ArrayList<Pair<Integer, Skald>> getParsers() {
-        return parsers;
+    public ArrayList<Pair<Tag, Skald>> getRegexes() {
+        return regexes;
     }
 }

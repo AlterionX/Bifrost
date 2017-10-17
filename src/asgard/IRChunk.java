@@ -1,8 +1,9 @@
 package asgard;
 
 import javafx.util.Pair;
+import tagtable.Tag;
 import yggdrasil.Branch;
-import yggdrasil.Seedling;
+import yggdrasil.Nidhogg;
 import yggdrasil.Yggdrasil;
 
 import java.util.ArrayList;
@@ -16,10 +17,10 @@ import java.util.List;
  */
 public class IRChunk {
     private boolean universal = false;
-    private List<Integer> tagIndex = new ArrayList<>();
-    private List<Integer> tagToMatch = new ArrayList<>();
+    private final List<Integer> tagIndex = new ArrayList<>();
+    private final List<Tag> tagToMatch = new ArrayList<Tag>();
     private IRRule productionRule;
-    private List<IRRule> rules = new ArrayList<>();
+    private final List<IRRule> rules = new ArrayList<>();
 
     /**
      * Tells the chunk to be a "catch all", similar to an else statement
@@ -32,7 +33,7 @@ public class IRChunk {
      * @param location The location of the relevant parent or child.
      * @param tag The tag representing the target symbol.
      */
-    public void addCondition(int location, Integer tag) {
+    public void addCondition(int location, Tag tag) {
         tagIndex.add(location);
         tagToMatch.add(tag);
     }
@@ -63,7 +64,7 @@ public class IRChunk {
      * Get the tags related to the positions. The ordering matches.
      * @return The list of tags
      */
-    public List<Integer> getTags() {
+    public List<Tag> getTags() {
         return tagToMatch;
     }
     /**
@@ -94,12 +95,12 @@ public class IRChunk {
         for (int i = 0; i < tagToMatch.size(); i++) {
             if (tagIndex.get(i) == -1) {
                 if (!(branch.getParent() instanceof Branch) ||
-                        ((Branch)branch.getParent()).getTag() != tagToMatch.get(i)) {
+                        !((Branch)branch.getParent()).getTag().equals(tagToMatch.get(i))) {
                     return false;
                 }
             } else {
                 if (tagIndex.get(i) >= branch.getChildren().size() ||
-                        ((Branch) branch.getChildren().get(tagIndex.get(i))).getTag() != tagToMatch.get(i)) {
+                        !((Branch) branch.getChildren().get(tagIndex.get(i))).getTag().equals(tagToMatch.get(i))) {
                     return false;
                 }
             }
@@ -113,16 +114,16 @@ public class IRChunk {
      * @param branch The source branch
      * @param children The string representation of the children as provided by their production rules.
      * @param childrenOutput The transformation output from the children
-     * @param context The context data, AST, and symtable
+     * @param symTable The symtable
      * @return A pair of String and StringBuilder, the output of the production rule and the output respectively
      */
     public Pair<String, StringBuilder> execute(Branch branch, List<String> children,
-                                               LinkedList<StringBuilder> childrenOutput, Yggdrasil context) {
+                                               LinkedList<StringBuilder> childrenOutput, Nidhogg symTable) {
         StringBuilder fToken = new StringBuilder();
-        productionRule.generateString(branch, children, childrenOutput, null, fToken, context);
+        productionRule.generateString(branch, children, childrenOutput, null, fToken, symTable);
         StringBuilder out = new StringBuilder();
         for (IRRule rule : rules) {
-            rule.generateString(branch, children, childrenOutput, fToken, out, context);
+            rule.generateString(branch, children, childrenOutput, fToken, out, symTable);
             out.append('\n');
         }
         return new Pair<>(fToken.toString(), out);

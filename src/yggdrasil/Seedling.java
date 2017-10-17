@@ -1,5 +1,7 @@
 package yggdrasil;
 
+import logger.Log;
+
 import java.util.List;
 
 public interface Seedling {
@@ -11,10 +13,10 @@ public interface Seedling {
     static void simplePrint(Seedling start) {
         start.lrTraverse((branch, level, additional) -> {
             for (int i = 0; i < level; i++) {
-                System.out.print(LVL_DELIM[i % LVL_DELIM.length] + "\t");
+                Log.l(LVL_DELIM[i % LVL_DELIM.length] + "\t");
             }
-            System.out.print(((Integer) level).toString());
-            System.out.println(branch.toString());
+            Log.l(((Integer) level).toString());
+            Log.lln(branch.toString());
         }, 0);
     }
 

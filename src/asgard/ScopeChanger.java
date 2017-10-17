@@ -1,5 +1,8 @@
 package asgard;
 
+import tagtable.Tag;
+import tagtable.TagPriority;
+import tagtable.TagTable;
 import yggdrasil.*;
 
 import java.io.IOException;
@@ -8,23 +11,27 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 
-public class ScopeChanger {
-    private Yggdrasil parent;
-    private boolean force;
-    private Set<Integer> changeOnEntry = new HashSet<>();
-    private Map<Integer, Set<Integer>> changeOnEntryFromTo = new HashMap<>();
+class ScopeChanger {
+    private TagTable tagTable;
+    private final Nidhogg symTable;
+    private final PathHolder holder;
+    private final boolean force;
+    private final Set<Tag> changeOnEntry = new HashSet<>();
+    private final Map<Tag, HashSet<Object>> changeOnEntryFromTo = new HashMap<>();
 
     /**
      * Presents a scope changer for the tree walk.
      * @param parent The context data, AST and symtable.
      * @param force Force deepening the tree.
      */
-    public ScopeChanger(Yggdrasil parent, boolean force) {
-        this.parent = parent;
+    public ScopeChanger(TagTable tagTable, PathHolder holder, Nidhogg symTable, boolean force) {
+        this.tagTable = tagTable;
+        this.holder = holder;
+        this.symTable = symTable;
         this.force = force;
         try {
-            String config = new String (Files.readAllBytes(Paths.get(parent.BASE_DIR + parent.TARGET +
-                    parent.SCOPE_CHANGER_DEC_EXTENSION)), StandardCharsets.UTF_8);
+            String config = new String(Files.readAllBytes(Paths.get(holder.BASE_DIR + holder.TARGET +
+                    holder.SCOPE_CHANGER_DEC_EXTENSION)), StandardCharsets.UTF_8);
             parseConfig(config);
         } catch (IOException e) {
             e.printStackTrace();
@@ -38,12 +45,12 @@ public class ScopeChanger {
     private void parseConfig(String input) {
         String[] config = input.trim().split("\\s+");
         int i = 0;
-        Integer last = 0;
+        Tag last = null;
         while (i < config.length) {
             if (config[i + 1].startsWith("%")) {
                 throw new RuntimeException("Incorrect scope configuration file.");
             }
-            Integer one = parent.tagEncode(config[i + 1], TagPriority.SUB);
+            Tag one = tagTable.addElseFindTag(TagPriority.PAR, config[i + 1]);
             boolean swap = true;
             switch (config[i]) {
                 case "%CASE":
@@ -52,7 +59,7 @@ public class ScopeChanger {
                     break;
                 case "%CHILD":
                     if (i < config.length - 2 && !config[i + 2].startsWith("%")) {
-                        Integer two = parent.tagEncode(config[i + 2], TagPriority.SUB);
+                        Tag two = tagTable.addElseFindTag(TagPriority.SUB, config[i + 2]);
                         changeOnEntryFromTo.putIfAbsent(one, new HashSet<>());
                         changeOnEntryFromTo.get(one).add(two);
                         i += 2;
@@ -73,15 +80,15 @@ public class ScopeChanger {
     }
 
     public void onLaunch(boolean reset) {
-        if (reset) parent.resetSymTable();
+        if (reset) symTable.reset();
     }
     public void onUpEnter(Branch branch) {
         if (changeOnEntry.contains(branch.getTag())) {
             //System.out.println("Headed into deeper scope: branch" + branch + ".");
             if (force) {
-                parent.deepenScope();
+                symTable.pushScope();
             } else {
-                parent.scopeTravDown();
+                symTable.travDownScope();
             }
         }
     }
@@ -89,28 +96,28 @@ public class ScopeChanger {
         if (changeOnEntryFromTo.containsKey(branch.getTag()) &&
                 changeOnEntryFromTo.get(branch.getTag()).contains(child.getTag())) {
             //System.out.println("Headed into higher scope: branch and child" + branch + ", " + child + ".");
-            parent.scopeTravUp();
+            symTable.travUpScope();
         }
     }
-    protected void onUpExit(Branch branch) {
+    void onUpExit(Branch branch) {
         if (changeOnEntry.contains(branch.getTag())) {
             //System.out.println("Headed into higher scope: branch" + branch + ".");
-            parent.scopeTravUp();
+            symTable.travUpScope();
         }
     }
-    protected void onDownExit(Branch branch, Branch child) {
+    void onDownExit(Branch branch, Branch child) {
         if ((changeOnEntryFromTo.containsKey(branch.getTag()) &&
                 changeOnEntryFromTo.get(branch.getTag()).contains(child.getTag()))
         ){
             //System.out.println("Headed into deeper scope: branch and child: " + branch + ", " + child + ".");
             if (force) {
-                parent.deepenScope();
+                symTable.pushScope();
             } else {
-                parent.scopeTravDown();
+                symTable.travDownScope();
             }
         }
     }
     public void onComplete(boolean reset) {
-        if (reset) parent.resetSymTable();
+        if (reset) symTable.reset();
     }
 }

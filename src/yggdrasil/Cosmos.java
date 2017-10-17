@@ -1,7 +1,10 @@
 package yggdrasil;
 
+import tagtable.TagTable;
+
 public abstract class Cosmos {
-    protected Yggdrasil context;
+    private final PathHolder context;
+    private final TagTable tagTable;
 
     /**
      * Initializes the module with a context AST, symtable, and data.
@@ -9,7 +12,8 @@ public abstract class Cosmos {
      *
      * @param context The AST, symtable, and contextual data class.
      */
-    public Cosmos(Yggdrasil context) {
+    protected Cosmos(PathHolder context, TagTable tagTable) {
+        this.tagTable = tagTable;
         this.context = context;
         configure();
     }
@@ -18,4 +22,11 @@ public abstract class Cosmos {
      * Is called by the constructor to configure the module.
      */
     protected abstract void configure();
+
+    protected TagTable getTagTable() {
+        return tagTable;
+    }
+    protected PathHolder getContext() {
+        return context;
+    }
 }

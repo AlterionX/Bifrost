@@ -1,4 +1,6 @@
 import asgard.Stag;
+import tagtable.TagPriority;
+import tagtable.TagTable;
 import yggdrasil.*;
 
 public class DArgListStag extends Stag {
@@ -6,8 +8,8 @@ public class DArgListStag extends Stag {
     int argNum = 0;
     int paramSize;
 
-    public DArgListStag(Yggdrasil parent, String lastFuncName) {
-        super(parent, false);
+    public DArgListStag(PathHolder pathHolder, TagTable tagTable, Nidhogg symTable, String lastFuncName) {
+        super(tagTable, pathHolder, symTable, false);
         this.funcName = lastFuncName;
     }
     @Override
@@ -16,11 +18,11 @@ public class DArgListStag extends Stag {
     }
     @Override
     protected boolean onUpEnter(Branch branch) {
-        if (branch.getTag() == parent.tagEncode("VAR_DEC", TagPriority.SUB)) {
-            parent.addSymProperty(funcName, "function", "arg" + argNum + "type",
+        if (branch.getTag() == super.tagTable.addElseFindTag(TagPriority.SUB, "VAR_DEC")) {
+            super.symTable.addSymProperty(funcName, "function", "arg" + argNum + "type",
                     ((Leaf) branch.getChildren().get(0)).getSubstring());
-            paramSize += Integer.parseInt(parent.getSymProperty(((Leaf) branch.getChildren().get(0)).getSubstring(), "type", "sizeof"));
-            parent.addSymProperty(funcName, "function", "arg" + argNum + "name",
+            paramSize += Integer.parseInt(super.symTable.getSymProperty(((Leaf) branch.getChildren().get(0)).getSubstring(), "type", "sizeof").orElse("asdf"));
+            super.symTable.addSymProperty(funcName, "function", "arg" + argNum + "name",
                     ((Leaf) branch.getChildren().get(1)).getSubstring());
             argNum++;
         }
@@ -40,8 +42,8 @@ public class DArgListStag extends Stag {
     }
     @Override
     protected boolean onComplete() {
-        parent.addSymProperty(funcName, "function", "argCount", String.valueOf(argNum));
-        parent.addSymProperty(funcName, "function", "paramSize", String.valueOf(paramSize));
+        super.symTable.addSymProperty(funcName, "function", "argCount", String.valueOf(argNum));
+        super.symTable.addSymProperty(funcName, "function", "paramSize", String.valueOf(paramSize));
         return false;
     }
     @Override

@@ -1,14 +1,15 @@
 package yggdrasil;
 
+import tagtable.Tag;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class Leaf extends Branch implements Seedling {
     private String substring;
-    private Object value;
 
-    public Leaf(int tag, String substring, Branch parent, Yggdrasil master) {
-        super(tag, master);
+    public Leaf(Tag tag, String substring) {
+        super(tag);
         this.substring = substring;
     }
 
@@ -30,6 +31,6 @@ public class Leaf extends Branch implements Seedling {
         return new ArrayList<>();
     }
     public String toString() {
-        return "\"" + substring + "\" :::: " + super.master.tagDecode(getTag(), TagPriority.LEX) + "::::LEVEL" + level;
+        return "\"" + substring + "\" :::: " + super.tag.getValue() + "::::LEVEL" + level;
     }
 }

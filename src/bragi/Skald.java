@@ -6,11 +6,11 @@ import java.util.List;
 
 public class Skald implements SkaldComponent {
     private SkaldComponent core;
-    private String pattern;
+    private final String pattern;
     private Lausavisa nfa;
     private Drottkvaett dfa;
 
-    private String alph;
+    private final String alph;
 
     public Skald(String input, String alph) {
         this.alph = alph;
@@ -33,7 +33,7 @@ public class Skald implements SkaldComponent {
     }
 
     /* Regex generation primitives and storage variables */
-    private String input;
+    private final String input;
     private int mark;
     private char peek() {
         return input.charAt(mark);

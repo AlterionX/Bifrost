@@ -4,12 +4,12 @@ import bragi.Lausavisa;
 import bragi.SkaldComponent;
 
 public class SkaldPrim implements SkaldComponent {
-    public final boolean EMP;
-    public final boolean DOT;
+    private final boolean EMP;
+    private final boolean DOT;
     public final char PRIMITIVE;
-    public final boolean NEGATE;
-    public final boolean EOF;
-    public final boolean SOF;
+    private final boolean NEGATE;
+    private final boolean EOF;
+    private final boolean SOF;
 
     public SkaldPrim(char prim) {
         PRIMITIVE = prim;
@@ -105,16 +105,8 @@ public class SkaldPrim implements SkaldComponent {
     }
 
     public boolean equals(Object o) {
-        if (o instanceof SkaldComponent) {
-            return o instanceof SkaldPrim &&
-                    EMP == ((SkaldPrim) o).EMP &&
-                    DOT == ((SkaldPrim) o).DOT &&
-                    EOF == ((SkaldPrim) o).EOF &&
-                    SOF == ((SkaldPrim) o).SOF &&
-                    PRIMITIVE == ((SkaldPrim) o).PRIMITIVE;
-            //TODO utilize this to match parallel streams in the RegEx
-        }
-        return false;
+        //TODO utilize this to match parallel streams in the RegEx
+        return o instanceof SkaldComponent && o instanceof SkaldPrim && EMP == ((SkaldPrim) o).EMP && DOT == ((SkaldPrim) o).DOT && EOF == ((SkaldPrim) o).EOF && SOF == ((SkaldPrim) o).SOF && PRIMITIVE == ((SkaldPrim) o).PRIMITIVE;
     }
     public int hashCode() {
         return EOF ? 258 : (SOF ? 257 : (EMP ? 256 : (DOT ? 257 : PRIMITIVE)));

@@ -1,5 +1,7 @@
 package asgard;
 
+import tagtable.Tag;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,16 +10,16 @@ import java.util.List;
  *
  * These pertain to an entire class of nodes, which have their own unique tags.
  */
-public class IRGroup {
-    private Integer initialTag;
-    private List<IRChunk> ruleChunks = new ArrayList<>();
+class IRGroup {
+    private final Tag initialTag;
+    private final List<IRChunk> ruleChunks = new ArrayList<>();
     private IRChunk catchall = null;
 
     /**
      * Initialize the rule group.
      * @param initialTag The tag this group will look at
      */
-    public IRGroup(Integer initialTag) {
+    public IRGroup(Tag initialTag) {
         this.initialTag = initialTag;
     }
 
@@ -40,7 +42,7 @@ public class IRGroup {
      * Gets the tag relevant to this group.
      * @return The tag
      */
-    public Integer getTag() {
+    public Tag getTag() {
         return initialTag;
     }
 

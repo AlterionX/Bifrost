@@ -1,8 +1,12 @@
 package asgard;
 
 import javafx.util.Pair;
+import tagtable.Tag;
+import tagtable.TagTable;
 import yggdrasil.Branch;
-import yggdrasil.TagPriority;
+import tagtable.TagPriority;
+import yggdrasil.Nidhogg;
+import yggdrasil.PathHolder;
 import yggdrasil.Yggdrasil;
 
 import java.io.BufferedWriter;
@@ -16,29 +20,29 @@ public class Hoenir extends Stag {
     private String outFileFormatString = null;
     private String targetIn;
     private BufferedWriter targetIRL;
-    private Map<Integer, IRGroup> ruleGroups;
+    private Map<Tag, IRGroup> ruleGroups;
 
     /**
      * Construct the walker and launch the parsing process for children.
-     * @param context The context data, AST, and symtable.
+     * @param symTable The symtable.
      */
-    public Hoenir(Yggdrasil context) {
-        super(context, false);
+    public Hoenir(PathHolder holder, TagTable tagTable, Nidhogg symTable) {
+        super(tagTable, holder, symTable, false);
         //Read input for intermediate code generation patterns
         List<String> ruleLines;
         try {
-            ruleLines = Files.readAllLines(Paths.get(context.BASE_DIR +
-                    context.TARGET + context.INTERMEDIATE_REPRESENTATION_LANG_DEC_EXTENSION));
+            ruleLines = Files.readAllLines(Paths.get(holder.BASE_DIR +
+                    holder.TARGET + holder.INTERMEDIATE_REPRESENTATION_LANG_DEC_EXTENSION));
             ruleLines = ruleLines.stream().filter(
                     line -> !line.isEmpty()).map(String::trim).collect(Collectors.toList());
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException("Issues with the analyzer's declaration file.");
         }
-        outFileFormatString = context.BASE_DIR + context.IRL_BASE_DIR + "%s" +
-                context.IRL_CODE_EXTENSION;
+        outFileFormatString = holder.BASE_DIR + holder.IRL_BASE_DIR + "%s" +
+                holder.IRL_CODE_EXTENSION;
         parseIRConfig(ruleLines);
-        if (context.DEBUG) printIRConfig();
+        //if (context.DEBUG) printIRConfig();
     }
 
     /**
@@ -68,14 +72,14 @@ public class Hoenir extends Stag {
      * @param ruleGroups The place to put these new groups.
      * @return The current position of the stream.
      */
-    private int parseRuleGroup(List<String> ruleStream, int position, Map<Integer, IRGroup> ruleGroups) {
+    private int parseRuleGroup(List<String> ruleStream, int position, Map<Tag, IRGroup> ruleGroups) {
         IRGroup ruleGroup;
         if (ruleStream.get(position).startsWith("/DECODE")) {
             String[] decodeStartRuleLine = ruleStream.get(position).split("\\s+");
             if (decodeStartRuleLine.length != 2) {
                 throw new RuntimeException("Malformed initial line for IRGroup.");
             }
-            ruleGroup = new IRGroup(parent.tagEncode(decodeStartRuleLine[1], TagPriority.SUB));
+            ruleGroup = new IRGroup(super.tagTable.addElseFindTag(TagPriority.PAR, decodeStartRuleLine[1]));
         } else {
             System.out.println("Error reading file rules.");
             throw new RuntimeException("Malformed IR representation rules.");
@@ -103,7 +107,7 @@ public class Hoenir extends Stag {
                 throw new RuntimeException("Malformed IRGroup condition");
             }
             for (int i = 1; i < rule.length - 1; i += 2) {
-                chunk.addCondition(Integer.parseInt(rule[i]), parent.tagEncode(rule[i + 1], TagPriority.SUB));
+                chunk.addCondition(Integer.parseInt(rule[i]), super.tagTable.addElseFindTag(TagPriority.PAR, rule[i + 1]));
             }
         } else if (ruleStream.get(position).startsWith("/CATCHALL")) {
             chunk.setUniversal();
@@ -146,7 +150,7 @@ public class Hoenir extends Stag {
      * Print the parsed rules.
      */
     private void printIRConfig() {
-        for (Integer k : ruleGroups.keySet()) {
+        for (Tag k : ruleGroups.keySet()) {
             ruleGroups.get(k).printRules();
         }
     }
@@ -158,22 +162,23 @@ public class Hoenir extends Stag {
     public void prime(String target) {
         targetIn = target;
         try {
-            Files.deleteIfExists(Paths.get(parent.BASE_DIR +
+            Files.deleteIfExists(Paths.get(super.holder.BASE_DIR +
                     String.format(outFileFormatString, targetIn)));
-            Files.createFile(Paths.get(parent.BASE_DIR +
+            Files.createFile(Paths.get(super.holder.BASE_DIR +
                     String.format(outFileFormatString, targetIn)));
-            targetIRL = Files.newBufferedWriter(Paths.get(parent.BASE_DIR +
+            targetIRL = Files.newBufferedWriter(Paths.get(super.holder.BASE_DIR +
                     String.format(outFileFormatString, targetIn)));
         } catch (IOException e0) {
             e0.printStackTrace();
             try {
-                Files.createDirectories(Paths.get(parent.BASE_DIR +
+                Files.createDirectories(Paths.get(super.holder.BASE_DIR +
                         String.format(outFileFormatString, targetIn)).getParent());
-                Files.deleteIfExists(Paths.get(parent.BASE_DIR +
+                Files.deleteIfExists(Paths.get(super.holder.BASE_DIR +
                         String.format(outFileFormatString, targetIn)));
-                Files.createFile(Paths.get(parent.BASE_DIR +
-                        String.format(outFileFormatString, targetIn)));
-                targetIRL = Files.newBufferedWriter(Paths.get(parent.BASE_DIR +
+                Files.createFile(Paths.get(super.holder.BASE_DIR +
+                            String.format(outFileFormatString, targetIn)
+                ));
+                targetIRL = Files.newBufferedWriter(Paths.get(super.holder.BASE_DIR +
                         String.format(outFileFormatString, targetIn)));
             } catch (IOException e1) {
                 e1.printStackTrace();
@@ -182,8 +187,8 @@ public class Hoenir extends Stag {
         }
     }
 
-    private Stack<ArrayList<String>> data = new Stack<>();
-    private Stack<LinkedList<StringBuilder>> output = new Stack<>();
+    private final Stack<ArrayList<String>> data = new Stack<>();
+    private final Stack<LinkedList<StringBuilder>> output = new Stack<>();
     @Override
     protected boolean onLaunch() {
         try {
@@ -224,7 +229,7 @@ public class Hoenir extends Stag {
             }
             if (workingChunk != null && workingChunk.isMatchWith(branch)) {
                 //Execute chunk
-                Pair<String, StringBuilder> result = workingChunk.execute(branch, children, childOutput, parent);
+                Pair<String, StringBuilder> result = workingChunk.execute(branch, children, childOutput, super.symTable);
                 production = result.getKey();
                 outputString = result.getValue();
             }

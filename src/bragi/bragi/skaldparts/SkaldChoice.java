@@ -9,7 +9,7 @@ public class SkaldChoice implements SkaldComponent {
     private ArrayList<SkaldComponent> opt = new ArrayList<>();
 
     public SkaldChoice() {}
-    public SkaldChoice(ArrayList<SkaldComponent> reversed) {
+    private SkaldChoice(ArrayList<SkaldComponent> reversed) {
         opt = reversed;
     }
 

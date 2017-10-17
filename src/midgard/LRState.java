@@ -1,41 +1,42 @@
 package midgard;
 
-import yggdrasil.TagPriority;
-import yggdrasil.Yggdrasil;
+import tagtable.Tag;
+import tagtable.TagTable;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class LRState {
-    private Yggdrasil parent;
+    private final TagTable tagTable;
     private Integer pos;
-    private CFGProduction rule;
-    private Set<Integer> follows;
+    private final CFGProduction rule;
+
     //Initialization
-    public LRState(int pos, CFGProduction rule, Yggdrasil parent, Integer... follows) {
-        this.parent = parent;
+    public LRState(int pos, CFGProduction rule, TagTable tagTable, Tag... follows) {
         this.pos = pos;
         this.rule = rule;
-        this.follows = new HashSet<>();
-        this.follows.addAll(Arrays.asList(follows));
+        this.tagTable = tagTable;
+        Set<Tag> follows1 = new HashSet<>(Arrays.stream(follows).collect(Collectors.toList()));
     }
     //Simpler copying
     public LRState duplicate() {
-        return new LRState(pos, rule, parent);
+        return new LRState(pos, rule, tagTable);
     }
     //Shift state
-    public int advance() {
-        return ++pos;
+    public void advance() {
+        ++pos;
     }
     //Fetch state
     public int getPos() {
         return pos;
     }
-    public int getLast() {
+    public Tag getLast() {
         return rule.getRightElement(pos - 1);
     }
-    public int getNext() {
+    public Tag getNext() {
         return rule.getRightElement(pos);
     }
     public CFGProduction getRule() {
@@ -46,12 +47,12 @@ public class LRState {
     }
     //Object class method override
     public String toString() {
-        StringBuilder sb = new StringBuilder(" state ").append(parent.tagDecode(rule.getLeft(), TagPriority.SUB)).append(" -> ");
+        StringBuilder sb = new StringBuilder(" state ").append(rule.getLeft()).append(" -> ");
         for (int i = 0; i < rule.getRightCount(); i++) {
             if (pos == i) {
                 sb.append(" ^ ");
             }
-            sb.append(" ").append(parent.tagDecode(rule.getRightElement(i), TagPriority.SUB));
+            sb.append(" ").append(rule.getRightElement(i));
         }
         if (pos == rule.getRightCount()) {
             sb.append(" ^");

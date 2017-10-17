@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Core implements Seedling {
-    private Branch internal;
+    private final Branch internal;
 
     public Core(Branch newCore) {
         internal = newCore;

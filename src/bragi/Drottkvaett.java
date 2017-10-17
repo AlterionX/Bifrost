@@ -7,9 +7,9 @@ import java.util.*;
 
 public class Drottkvaett {
     ArrayList<Character> input;
-    Map<Stef, Map<SkaldPrim, Stef>> stateTable;
-    Stef headNode = null;
-    Set<Stef> terminalNodes;
+    private Map<Stef, Map<SkaldPrim, Stef>> stateTable;
+    private Stef headNode = null;
+    private Set<Stef> terminalNodes;
 
     public Drottkvaett() {}
 
@@ -88,7 +88,7 @@ public class Drottkvaett {
         }
         return dfa;
     }
-    public static Drottkvaett merge(Drottkvaett dfaOne, Drottkvaett dfaTwo) {
+    private static Drottkvaett merge(Drottkvaett dfaOne, Drottkvaett dfaTwo) {
         if (dfaOne == null) {
             return dfaTwo;
         }

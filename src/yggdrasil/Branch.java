@@ -1,18 +1,19 @@
 package yggdrasil;
 
+import tagtable.Tag;
+import tagtable.TagPriority;
+
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
 public class Branch implements Seedling {
-    private Integer tag;
-    private ArrayList<Branch> children = new ArrayList<>();
+    protected final Tag tag;
+    private final ArrayList<Branch> children = new ArrayList<>();
     private Seedling parent;
-    protected Yggdrasil master;
-    protected int level;
+    int level;
 
-    public Branch(Integer tag, Yggdrasil master) {
-        this.master = master;
+    public Branch(Tag tag) {
         this.tag = tag;
     }
 
@@ -28,8 +29,8 @@ public class Branch implements Seedling {
     }
     public void lrTraverse(TreeTraverser func, int level) {
         func.processBranch(this, level);
-        for (int i = 0; i < children.size(); i++) {
-            children.get(i).lrTraverse(func, level + 1);
+        for (Branch aChildren : children) {
+            aChildren.lrTraverse(func, level + 1);
         }
     }
     public void setLevel(int level) {
@@ -43,11 +44,11 @@ public class Branch implements Seedling {
     public List<? extends Seedling> getChildren() {
         return children;
     }
-    public int getTag() {
+    public Tag getTag() {
         return tag;
     }
     public String toString() {
-        return master.tagDecode(tag, TagPriority.SUB);
+        return tag.getValue();
     }
 
     public void flipChildren() {

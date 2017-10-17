@@ -1,34 +1,34 @@
 package midgard;
 
-import yggdrasil.TagPriority;
-import yggdrasil.TagRecord;
-import yggdrasil.Yggdrasil;
+import tagtable.Tag;
+import tagtable.TagTable;
+import tagtable.TagPriority;
 
 import java.util.*;
 
 public class LRNode {
     //States and outEdges
-    private Set<LRState> ruleStates;
-    private Map<Integer, LRNode> outEdges;
-    private Yggdrasil parent;
+    private final Set<LRState> ruleStates;
+    private final Map<Tag, LRNode> outEdges;
+    private final TagTable tagTable;
     //Simply create block without closure or continuing
-    public LRNode(LRState state, Yggdrasil parent) {
-        this.parent = parent;
+    public LRNode(LRState state, TagTable tagTable) {
+        this.tagTable = tagTable;
         ruleStates = new HashSet<>();
         outEdges = new HashMap<>();
         ruleStates.add(state);
     }
-    public LRNode(Set<LRState> LRStates, Yggdrasil parent) {
-        this.parent = parent;
+    public LRNode(Set<LRState> LRStates, TagTable tagTable) {
+        this.tagTable = tagTable;
         ruleStates = new HashSet<>();
         ruleStates.addAll(LRStates);
         outEdges = new HashMap<>();
     }
     //Node modification and data retrieval
-    public LRNode fetchTransition(Integer input) {
+    public LRNode fetchTransition(Tag input) {
         return outEdges.get(input);
     }
-    public void addTransition(Integer input, LRNode destination) {
+    public void addTransition(Tag input, LRNode destination) {
         outEdges.put(input, destination);
     }
     public Set<LRState> fetchStates() {
@@ -37,7 +37,7 @@ public class LRNode {
     public void addRuleState(LRState state) {
         ruleStates.add(state);
     }
-    public Map<Integer, LRNode> getOutEdges() {
+    public Map<Tag, LRNode> getOutEdges() {
         return outEdges;
     }
     //Fetching rule states and the block state
@@ -50,7 +50,7 @@ public class LRNode {
     //Determines end states
     public boolean isEndNode() {
         //Cleanup
-        if (ruleStates.iterator().next().getRule().getLeft() == parent.tagEncode(TagRecord.START_LABEL, TagPriority.SUB) &&
+        if (ruleStates.iterator().next().getRule().getLeft() == tagTable.START_TAG &&
                 ruleStates.iterator().next().isAtEnd()) {
             System.out.println("The final death. But this is a benign death. A proper death. " +
                     "The death of a warrior, bound for Valhalla. " +
@@ -73,8 +73,8 @@ public class LRNode {
         for (LRState state : ruleStates) {
             total.append("\tMember: ").append(state).append("\n");
         }
-        for (Integer transition : outEdges.keySet()) {
-            total.append("\tTransition: ").append(parent.tagDecode(transition, TagPriority.SUB)).append("\n");
+        for (Tag transition : outEdges.keySet()) {
+            total.append("\tTransition: ").append(transition).append("\n");
         }
         total.setLength(total.length() - 1);
         return total.toString();

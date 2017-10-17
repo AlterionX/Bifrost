@@ -1,7 +1,9 @@
 package muspelheim;
 
 import javafx.util.Pair;
+import tagtable.TagTable;
 import yggdrasil.Cosmos;
+import yggdrasil.PathHolder;
 import yggdrasil.Yggdrasil;
 
 import java.io.BufferedWriter;
@@ -18,8 +20,8 @@ public class Sinmara extends Cosmos {
     List<Set<String>> stepVarSets = new ArrayList<>();
     private String targetAsm;
 
-    public Sinmara(Yggdrasil context) {
-        super(context);
+    public Sinmara(PathHolder holder, TagTable tagTable) {
+        super(holder, tagTable);
         System.out.println("Sinmara configured.");
     }
 
@@ -28,7 +30,7 @@ public class Sinmara extends Cosmos {
         List<String> configLines;
         try {
             configLines = Files.readAllLines(Paths.get(
-                    context.BASE_DIR + context.TARGET + context.MACHINE_LANG_TRANSLATION_DEC_EXTENSION
+                    getContext().BASE_DIR + getContext().TARGET + getContext().MACHINE_LANG_TRANSLATION_DEC_EXTENSION
             )).stream()
                     .map(String::trim)
                     .filter(str -> !str.isEmpty() && !str.trim().startsWith("#"))

@@ -12,7 +12,7 @@ public class SkaldSequence implements SkaldComponent {
     public SkaldSequence() {
         seq = new ArrayList<>();
     }
-    public SkaldSequence(List<SkaldComponent> reversed) {
+    private SkaldSequence(List<SkaldComponent> reversed) {
         seq.addAll(reversed);
     }
 

@@ -10,14 +10,13 @@ import java.util.List;
 import java.util.Map;
 
 public class Idavoll extends Cosmos{
-    private String assembler = "gcc";
     private String[] flags;
     private Map<String, ArrayList<String>> flagArgs;
 
     private String base_dir;
 
     public Idavoll(Yggdrasil context) {
-        super(context);
+        super(context.getPaths(), context.getTagTable());
     }
     protected void configure() {
         //throw new RuntimeException("Unimplemented.");
@@ -34,6 +33,7 @@ public class Idavoll extends Cosmos{
         }
 
         List<String> cmd = new ArrayList<>();
+        String assembler = "gcc";
         cmd.add(assembler);
         for (String flag : flags) {
             cmd.add(flag);
@@ -42,7 +42,7 @@ public class Idavoll extends Cosmos{
             }
         }
         ProcessBuilder pb = new ProcessBuilder(cmd).inheritIO()
-                .directory(new java.io.File(base_dir == null ? context.BASE_DIR : base_dir));
+                .directory(new java.io.File(base_dir == null ? getContext().BASE_DIR : base_dir));
         Collections.addAll(cmd, files);
         System.out.print("ProcessBuilder launching with the following process: ");
         System.out.println(pb.command());

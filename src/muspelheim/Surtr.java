@@ -1,17 +1,17 @@
 package muspelheim;
 
 import javafx.util.Pair;
+import tagtable.TagTable;
 import yggdrasil.Cosmos;
+import yggdrasil.PathHolder;
 import yggdrasil.Yggdrasil;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Surtr extends Cosmos{
@@ -20,15 +20,15 @@ public class Surtr extends Cosmos{
 
     private Sinmara reparser;
 
-    public Surtr(Yggdrasil context) {
-        super(context);
+    public Surtr(PathHolder holder, TagTable tagTable) {
+        super(holder, tagTable);
         System.out.println("Surtr configured.");
     }
     protected void configure() {
-        machine = new Machine(context.BASE_DIR + context.TARGET + context.MACHINE_DEC_EXTENSION);
-        if (context.DEBUG) System.out.println(machine.toDefinitionString());
-        reparser = new Sinmara(context);
-        outFileFormatString = context.MTL_BASE_DIR + "%s" + context.MTL_EXTENSION;
+        machine = new Machine(getContext().BASE_DIR + getContext().TARGET + getContext().MACHINE_DEC_EXTENSION);
+        if (getContext().DEBUG) System.out.println(machine.toDefinitionString());
+        reparser = new Sinmara(getContext(), getTagTable());
+        outFileFormatString = getContext().MTL_BASE_DIR + "%s" + getContext().MTL_EXTENSION;
     }
 
     public void convert(String file) {
@@ -49,22 +49,22 @@ public class Surtr extends Cosmos{
         //Write back
         BufferedWriter writer;
         try {
-            Files.deleteIfExists(Paths.get(context.BASE_DIR +
+            Files.deleteIfExists(Paths.get(getContext().BASE_DIR +
                     String.format(outFileFormatString, file)));
-            Files.createFile(Paths.get(context.BASE_DIR +
+            Files.createFile(Paths.get(getContext().BASE_DIR +
                     String.format(outFileFormatString, file)));
-            writer = Files.newBufferedWriter(Paths.get(context.BASE_DIR +
+            writer = Files.newBufferedWriter(Paths.get(getContext().BASE_DIR +
                     String.format(outFileFormatString, file)));
         } catch (IOException e0) {
             e0.printStackTrace();
             try {
-                Files.createDirectories(Paths.get(context.BASE_DIR +
+                Files.createDirectories(Paths.get(getContext().BASE_DIR +
                         String.format(outFileFormatString, file)).getParent());
-                Files.deleteIfExists(Paths.get(context.BASE_DIR +
+                Files.deleteIfExists(Paths.get(getContext().BASE_DIR +
                         String.format(outFileFormatString, file)));
-                Files.createFile(Paths.get(context.BASE_DIR +
+                Files.createFile(Paths.get(getContext().BASE_DIR +
                         String.format(outFileFormatString, file)));
-                writer = Files.newBufferedWriter(Paths.get(context.BASE_DIR +
+                writer = Files.newBufferedWriter(Paths.get(getContext().BASE_DIR +
                         String.format(outFileFormatString, file)));
             } catch (IOException e1) {
                 e1.printStackTrace();
@@ -74,7 +74,7 @@ public class Surtr extends Cosmos{
         //Input format
         List<String> irlLines;
         try {
-            irlLines = Files.readAllLines(Paths.get(context.BASE_DIR + file)).stream().filter(
+            irlLines = Files.readAllLines(Paths.get(getContext().BASE_DIR + file)).stream().filter(
                     str -> !str.startsWith("#")).collect(Collectors.toList());
         } catch (IOException e) {
             e.printStackTrace();

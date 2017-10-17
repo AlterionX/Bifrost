@@ -1,57 +1,60 @@
 package midgard;
 
+import tagtable.Tag;
+import tagtable.TagPriority;
+import tagtable.TagTable;
 import yggdrasil.*;
 
 import java.util.*;
 
-public class CFGProduction implements Iterable<Integer> {
-    private Yggdrasil parent;
-    private Integer left;
-    private List<Integer> rule;
+public class CFGProduction implements Iterable<Tag> {
+    private final TagTable tagTable;
+    private Tag left;
+    private List<Tag> rule;
     private List<List<String>> actions;
 
-    public CFGProduction(String left, Iterable<String> rightSeries, Yggdrasil parent) {
-        this.parent = parent;
+    public CFGProduction(String left, Iterable<String> rightSeries, TagTable tagTable) {
+        this.tagTable = tagTable;
         //Error checking
         if (left.isEmpty()) throw new RuntimeException("False cmd.");
-        if (parent.isTerminal(left)) throw new RuntimeException("Left-hand side cannot be a terminal.");
+        if (tagTable.isTerminalTag(tagTable.addElseFindTag(TagPriority.PAR, left))) throw new RuntimeException("Left-hand side, " + left + " cannot be a terminal.");
         //Create rule
-        this.left = parent.addTagIfAbsent(left, TagPriority.PAR);
+        this.left = tagTable.addElseFindTag(TagPriority.PAR, left);
         rule = new ArrayList<>();
         actions = new ArrayList<>();
         for (String term : rightSeries) {
             if (term.charAt(0) != '%') {
-                rule.add(parent.addTagIfAbsent(term, TagPriority.PAR));
+                rule.add(tagTable.addElseFindTag(TagPriority.PAR, term));
                 actions.add(new ArrayList<>());
             } else {
                 actions.get(actions.size() - 1).add(term);
             }
         }
     }
-    public CFGProduction(int left, List<Integer> rule, Yggdrasil parent) {
-        this.parent = parent;
+    public CFGProduction(Tag left, List<Tag> rule, TagTable tagTable) {
+        this.tagTable = tagTable;
         this.left = left;
         this.rule = new ArrayList<>();
         this.rule.addAll(rule);
     }
 
     //Fetch things from left and right
-    public int getLeft() {
+    public Tag getLeft() {
         return left;
     }
-    public List<Integer> getRight() {
+    public List<Tag> getRight() {
         return rule;
     }
     public int getRightCount() {
         return rule.size();
     }
-    public Integer getRightElement(int k) {
+    public Tag getRightElement(int k) {
         return rule.get(k);
     }
     //Following a rule reduce
-    public Branch ruleReduce(Stack<Integer> stateStack, Stack<Branch> productionStack) {
-        if (parent.DEBUG) System.out.println("Reducing " + productionStack + " with state stack " + stateStack + " with rule " + this);
-        Branch nextBranch = new Branch(left, parent);
+    public void ruleReduce(Stack<Integer> stateStack, Stack<Branch> productionStack) {
+        //if (tagTable.DEBUG) System.out.println("Reducing " + productionStack + " with state stack " + stateStack + " with rule " + this);
+        Branch nextBranch = new Branch(left);
         LinkedList<Branch> branches = new LinkedList<>();
         for (int i = 0; i < rule.size(); i++) {
             if (productionStack.peek() == null) {
@@ -63,16 +66,15 @@ public class CFGProduction implements Iterable<Integer> {
         }
         branchMerge(nextBranch, branches);
         productionStack.push(nextBranch);
-        return nextBranch;
     }
 
     private void branchMerge(Branch nextBranch, LinkedList<Branch> branches) {
-        if (parent.DEBUG) {
+        /*if (tagTable.DEBUG) {
             System.out.println("Pre-concat branches");
             for (Branch branch : branches) {
                 Seedling.simplePrint(branch);
             }
-        }
+        }*/
         LinkedList<Branch> tempList = new LinkedList<>();
         for (int i = 0; i < branches.size(); i++) {
             List<String> tokenActions = actions.get(i);
@@ -105,7 +107,7 @@ public class CFGProduction implements Iterable<Integer> {
                         case "%POP":
                             //Make a new branch, pop up several levels, and append to the nextBranch
                             tempList.addLast(branches.get(i));
-                            Branch subBranch = new Branch(parent.tagEncode(actionDecoded[2], TagPriority.SUB), parent);
+                            Branch subBranch = new Branch(tagTable.addElseFindTag(TagPriority.PAR, actionDecoded[2]));
                             for (int j = 0; j < Integer.parseInt(actionDecoded[1]); j++) {
                                 subBranch.append(tempList.removeLast());
                             }
@@ -120,16 +122,16 @@ public class CFGProduction implements Iterable<Integer> {
         while (!tempList.isEmpty()) {
             nextBranch.append(tempList.removeFirst());
         }
-        if (parent.DEBUG) {
+        /*if (tagTable.DEBUG) {
             (new Scanner(System.in)).nextLine();
             System.out.println("Post-concat branches");
             Seedling.simplePrint(nextBranch);
             (new Scanner(System.in)).nextLine();
-        }
+        }*/
     }
 
     //Iterator for internal list of rules
-    public Iterator<Integer> iterator() {
+    public Iterator<Tag> iterator() {
         return rule.iterator();
     }
     //Object overrides, used for standard containers and Collections API
@@ -147,12 +149,15 @@ public class CFGProduction implements Iterable<Integer> {
         return false;
     }
     public int hashCode() {
-        return rule.stream().reduce((first, second) -> first + second).orElse(0) + left;
+        return rule.stream()
+                .map(Tag::hashCode)
+                .reduce((first, second) -> first + second)
+                .orElse(0) + left.hashCode();
     }
     public String toString() {
-        StringBuilder sb = new StringBuilder().append(left).append(" (").append(parent.tagDecode(left, TagPriority.SUB)).append(") -> ").append("[");
+        StringBuilder sb = new StringBuilder().append(left).append(" -> [");
         for (int i = 0; i < rule.size(); i++) {
-            sb.append(rule.get(i)).append(" (").append(parent.tagDecode(rule.get(i), TagPriority.SUB)).append(")").append(actions.get(i));
+            sb.append(rule.get(i)).append(" ").append(actions.get(i));
             if (i != rule.size() - 1) {
                 sb.append(", ");
             }

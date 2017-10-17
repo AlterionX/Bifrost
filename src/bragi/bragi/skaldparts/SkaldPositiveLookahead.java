@@ -4,7 +4,7 @@ import bragi.Lausavisa;
 import bragi.SkaldComponent;
 
 public class SkaldPositiveLookahead implements SkaldComponent {
-    SkaldComponent internal;
+    private SkaldComponent internal;
 
     public SkaldPositiveLookahead(SkaldComponent regex) {
         internal = regex;

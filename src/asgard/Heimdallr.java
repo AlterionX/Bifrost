@@ -1,9 +1,7 @@
 package asgard;
 
-import yggdrasil.Branch;
-import yggdrasil.Cosmos;
-import yggdrasil.Seedling;
-import yggdrasil.Yggdrasil;
+import logger.Log;
+import yggdrasil.*;
 
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
@@ -14,6 +12,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,27 +22,29 @@ public class Heimdallr extends Cosmos {
     private Hoenir irlGen;
     private List<Stag> astWalkers;
     private List<String> stagFiles;
+    private Nidhogg symTable;
 
     /**
      * Construct Heimdallr.
      * @param context The context data, AST, and symtable
      */
     public Heimdallr(Yggdrasil context) {
-        super(context);
+        super(context.getPaths(), context.getTagTable());
+        symTable = context.getSymTable();
+        irlGen = new Hoenir(getContext(), getTagTable(), symTable);
         System.out.println("Heimdallr configured.");
     }
     /**
      * Configure Heimdallr and launch Hoenir's configuration
      */
     protected void configure() {
-        irlGen = new Hoenir(context);
         System.out.println("Hoenir configured.");
         astWalkers = new ArrayList<>();
         stagFiles = new ArrayList<>();
 
         try {
-            stagFiles = Files.readAllLines(Paths.get(context.BASE_DIR +
-                    context.TARGET + context.ANALYZER_DEC_EXTENSION));
+            stagFiles = Files.readAllLines(Paths.get(getContext().BASE_DIR +
+                    getContext().TARGET + getContext().ANALYZER_DEC_EXTENSION));
             for (int i = 0; i < stagFiles.size(); i++) {
                 String line = stagFiles.get(i);
                 if (line.startsWith("PATH=")) {
@@ -66,16 +67,16 @@ public class Heimdallr extends Cosmos {
         URL base;
         try {
             if (stagFiles.get(0).startsWith("PATH=")) {
-                base = Paths.get(context.BASE_DIR + stagFiles.get(0).substring("PATH=".length()).trim()).toAbsolutePath().toUri().toURL();
+                base = Paths.get(getContext().BASE_DIR + stagFiles.get(0).substring("PATH=".length()).trim()).toAbsolutePath().toUri().toURL();
                 stagFiles.remove(0);
             } else {
-                base = Paths.get(context.BASE_DIR).toAbsolutePath().toUri().toURL();
+                base = Paths.get(getContext().BASE_DIR).toAbsolutePath().toUri().toURL();
             }
         } catch (MalformedURLException e) {
             e.printStackTrace();
-            throw new RuntimeException("Something bad happened with the configuration.");
+            throw new RuntimeException("Something bad happened with the configuration." );
         }
-        URLClassLoader loader = null;
+        URLClassLoader loader;
         try {
             loader = URLClassLoader.newInstance(new URL[]{
                     Paths.get(base.toURI()).toAbsolutePath().resolve("./out/").toAbsolutePath().toUri().toURL(),
@@ -111,18 +112,18 @@ public class Heimdallr extends Cosmos {
                 e.printStackTrace();
                 throw new RuntimeException("Could not create output directory.");
             }
-            int errcode = 0;
+            int errcode;
             try {
-                System.out.println(
-                        Paths.get(base.toURI()).toAbsolutePath().toString() + ";./src/;.");
+                Path stagPath = Paths.get(base.toURI()).toAbsolutePath();
+                System.out.println(stagPath + ";./src/;.");
                 errcode = compiler.run(null, null, null,
                         "-sourcepath",
-                        Paths.get(base.toURI()).toAbsolutePath().toString() + ";./src/;.",
+                        stagPath + ";./src/;.",
                         "-classpath",
-                        Paths.get(base.toURI()).toAbsolutePath().resolve("./out/").toAbsolutePath() + ";./out/;.",
+                        stagPath.resolve("./out/").toAbsolutePath() + ";./out/;.",
                         "-d",
-                        Paths.get(base.toURI()).toAbsolutePath().resolve("./out/").toAbsolutePath().toString(),
-                        base.getPath() + targetStag + ".java");
+                        stagPath.resolve("./out/").toAbsolutePath().toString(),
+                        stagPath.resolve(targetStag + ".java").toAbsolutePath().toString());
             } catch (URISyntaxException e) {
                 e.printStackTrace();
                 throw new RuntimeException("Error opening folders for the classes.");
@@ -135,13 +136,13 @@ public class Heimdallr extends Cosmos {
             try {
                 Object o = loader.loadClass(
                         targetStag.replace('\\', '.').replace('/', '.')
-                ).getConstructor(context.getClass())
-                        .newInstance(context);
+                ).getConstructor(getContext().getClass(), getTagTable().getClass(), symTable.getClass())
+                        .newInstance(getContext(), getTagTable(), symTable);
                 walker = (Stag) o;
             } catch (ClassNotFoundException | InstantiationException |
                     IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
                 e.printStackTrace();
-                throw new RuntimeException("Something is wrong with the java file that has been passed int.");
+                throw new RuntimeException("Something is wrong with the java file that has been passed in.");
             }
             System.out.println(targetStag + " loaded. Walking AST.");
             astWalkers.add(walker);
@@ -150,10 +151,10 @@ public class Heimdallr extends Cosmos {
             System.out.println("Walking " + walker.getWalkerName());
             Stag.startWalk(walker, root, true);
         }
-        context.mangleSyms();
-        System.out.println("/*******************************AST********************************/");
+        symTable.mangle();
+        Log.lln("/*******************************AST********************************/");
         Seedling.simplePrint(root);
-        System.out.println("/******************************************************************/");
+        Log.lln("/******************************************************************/");
         irlGen.prime(file);
         System.out.println("Walking " + irlGen.getWalkerName());
         System.out.println("Converting AST to IR code");

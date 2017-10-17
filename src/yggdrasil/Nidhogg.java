@@ -7,18 +7,18 @@ import java.util.Optional;
  * Symbol table.
  */
 public class Nidhogg {
-    private Nastrond root;
+    private final Nastrond root;
     private Nastrond currentScope;
     public Nidhogg() {
         root = new Nastrond(null);
         currentScope = root;
     }
     //What goes in a symbol table?
-    public boolean addSym(String symbol, String qualifier, int offset) {
+    public void addSym(String symbol, String qualifier, int offset) {
         if (offset != -1) {
             Optional<Nastrond> scope = Optional.of(currentScope);
             for (int i = 0; i < offset; i++) {
-                scope = scope.map(Nastrond::up).orElse(Optional.empty());
+                scope = scope.flatMap(Nastrond::up);
             }
             if (!scope.isPresent()) {
                 throw new RuntimeException("No scope!");
@@ -27,13 +27,12 @@ public class Nidhogg {
         } else {
             root.addSym(symbol, qualifier);
         }
-        return true;
     }
     public String hasSym(String symbol, String qualifier, int offset) {
         if (offset != -1) {
             Optional<Nastrond> scope = Optional.of(currentScope);
             for (int i = 0; i < offset; i++) {
-                scope = scope.map(Nastrond::up).orElse(Optional.empty());
+                scope = scope.flatMap(Nastrond::up);
             }
             if (!scope.isPresent()) {
                 throw new RuntimeException("No scope!");
@@ -46,7 +45,7 @@ public class Nidhogg {
         currentScope.getSymScope(symbol, qualifier).ifPresent(scope -> scope.modSymAttribute(symbol, qualifier, property, data));
     }
     public Optional<String> getSymProperty(String symbol, String qualifier, String property) {
-        return currentScope.getSymScope(symbol, qualifier).map(scope -> scope.checkSymAttribute(symbol, qualifier, property)).orElse(Optional.empty());
+        return currentScope.getSymScope(symbol, qualifier).flatMap(scope -> scope.checkSymAttribute(symbol, qualifier, property));
     }
     public Optional<Map<String, String>> getSym(String symbol, String qualifier, int offser) {
         return currentScope.getSym(symbol, qualifier);

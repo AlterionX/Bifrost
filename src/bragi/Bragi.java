@@ -4,8 +4,8 @@ import niflheim.Hel;
 
 import java.util.*;
 
-public class Bragi {
-    private static Scanner s = new Scanner(System.in);
+class Bragi {
+    private static final Scanner s = new Scanner(System.in);
     private static Skald parser = null;
     public static void main(String[] args) {
         System.out.println("NOTE: backtracking is NOT available.");

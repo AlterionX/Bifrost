@@ -60,7 +60,7 @@ This manages the rules back end and generates the parsing tables. It will initia
 
 #### CFG ####
 
-The managers of the context free language. While Skadi manages the traffic between the two and Jormungandr deals with the queries, this one does all the work.
+The managers of the tokenStream free language. While Skadi manages the traffic between the two and Jormungandr deals with the queries, this one does all the work.
 
 ### Analyzer (asgard) ###
 
@@ -192,9 +192,9 @@ Every separate declaration must be made on a new line.
 
 An optional line at the beginning, if written, begins with `>`, and will redirect the output of the code to the provided path, such that %s will be replaced by the entire file name of the file being translated on output. All rules must be on their own line.
 
-Separate decoding schemes for a single node tag will be grouped between a single `/DECODE TAG_NAME` and a single `\END`. Within these blocks, each separate case must be surrounded by `/COND NUMBER TAG` and `/END`. This means that the set of direct mapping rules listed within the block will be used upon the `NUMBER` child of the context node `TAG_NAME` being equivalent to `TAG`. Nested condition statements are not allowed. Condition statements must be provided. `/CATCHALL` is allowed per variable, and only allowed once per `/DECODE` block.
+Separate decoding schemes for a single node tag will be grouped between a single `/DECODE TAG_NAME` and a single `\END`. Within these blocks, each separate case must be surrounded by `/COND NUMBER TAG` and `/END`. This means that the set of direct mapping rules listed within the block will be used upon the `NUMBER` child of the tokenStream node `TAG_NAME` being equivalent to `TAG`. Nested condition statements are not allowed. Condition statements must be provided. `/CATCHALL` is allowed per variable, and only allowed once per `/DECODE` block.
 
-The statements of a conditional block must have the first rule be a production rule, one of the form `%F: .*` where `.*` would be the rule. This will be a reference for the first context node to refer to this child node. There can be only one production rule per conditional block.
+The statements of a conditional block must have the first rule be a production rule, one of the form `%F: .*` where `.*` would be the rule. This will be a reference for the first tokenStream node to refer to this child node. There can be only one production rule per conditional block.
 
 The way this works is similar to simple substitution of strings for their matching counter parts.
 

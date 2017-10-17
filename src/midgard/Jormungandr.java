@@ -1,9 +1,8 @@
 package midgard;
 
-import yggdrasil.Branch;
-import yggdrasil.Cosmos;
-import yggdrasil.Seedling;
-import yggdrasil.Yggdrasil;
+import niflheim.Helvegar;
+import tagtable.TagTable;
+import yggdrasil.*;
 
 import java.util.Stack;
 
@@ -18,20 +17,24 @@ import java.util.Stack;
 public class Jormungandr extends Cosmos {
     //Stable fields
     private Skadi skadi;
+    private Helvegar tokenStream;
+    private WorldTree context;
 
     /**
      * Initializes Jormungandr.
-     * @param context The context data, AST, and symtable
+     * @param tokenStream The tokenStream data, AST, and symtable
      */
-    public Jormungandr(Yggdrasil context) {
-        super(context);
+    public Jormungandr(PathHolder holder, TagTable tagTable, Helvegar tokenStream, WorldTree tree) {
+        super(holder, tagTable);
+        this.context = tree;
+        this.tokenStream = tokenStream;
         System.out.println("Jormungandr configured.");
     }
     /**
      * Initialize the parser tables.
      */
     protected void configure() {
-        skadi = new Skadi(context);
+        skadi = new Skadi(getContext(), getTagTable());
     }
 
     /**
@@ -40,21 +43,21 @@ public class Jormungandr extends Cosmos {
      */
     public boolean parse() {
         System.out.println("Converting source code to AST");
-        if (context.DEBUG) System.out.println("/*************************Generating AST***************************/");
+        if (getContext().DEBUG) System.out.println("/*************************Generating AST***************************/");
         Stack<Branch> productionStack = new Stack<>();
         Stack<Integer> stateStack = new Stack<>();
-        Branch curr = context.nextToken();
-        Branch next = context.nextToken();
+        Branch curr = tokenStream.next();
+        Branch next = tokenStream.next();
         stateStack.push(0);
         productionStack.push(null);
         boolean failed = false;
         while (true) {
             Integer actionEncoding = skadi.progressAndEncode(stateStack.peek(), curr, next);
-            if (context.DEBUG) System.out.println("Processing stack: " + productionStack + ", state stack: " + stateStack + ", lookahead 1: " + curr);
-            if (context.DEBUG) System.out.println("Action to take during this step: " + actionEncoding);
+            //if (getContext().DEBUG) System.out.println("Processing stack: " + productionStack + ", state stack: " + stateStack + ", lookahead 1: " + curr);
+            //if (getContext().DEBUG) System.out.println("Action to take during this step: " + actionEncoding);
             if (skadi.isComplete(actionEncoding, curr)) {
                 if (productionStack.size() == 3 && stateStack.size() == 3) {
-                    if (context.DEBUG) System.out.println("Parse complete");
+                    //if (getContext().DEBUG) System.out.println("Parse complete");
                     productionStack.pop();
                     stateStack.pop();
                     break;
@@ -71,7 +74,7 @@ public class Jormungandr extends Cosmos {
             } else if (skadi.isShift(actionEncoding)) { //SHIFT
                 productionStack.push(curr);
                 curr = next;
-                next = context.nextToken();
+                next = tokenStream.next();
                 stateStack.push(skadi.decode(actionEncoding));
             } else { //ERROR
                 System.out.println("Syntax error on reading " + curr + ", and " + next + ", with stack " + productionStack + ".");
@@ -84,7 +87,7 @@ public class Jormungandr extends Cosmos {
         } else {
             Seedling.simplePrint(productionStack.peek());
         }
-        if (context.DEBUG) System.out.println("/******************************************************************/");
+        if (getContext().DEBUG) System.out.println("/******************************************************************/");
         return !failed;
     }
 }

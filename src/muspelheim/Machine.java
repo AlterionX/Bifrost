@@ -8,12 +8,11 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Machine {
+class Machine {
     private String machineName;
     private int regCount;
-    private int regSize;
-    private Map<Integer, List<String>> properties = new HashMap<>();
-    private List<String> allProperty = new ArrayList<>();
+    private final Map<Integer, List<String>> properties = new HashMap<>();
+    private final List<String> allProperty = new ArrayList<>();
     private String[] names;
 
     private Map<String, Map<Integer, Integer>> varToIntToReg;
@@ -47,7 +46,7 @@ public class Machine {
             String[] configRule = configPair[0].split("\\s+");
             switch (configRule[0]) {
                 case "REGSIZE":
-                    regSize = Integer.parseInt(configPair[1]);
+                    int regSize = Integer.parseInt(configPair[1]);
                     break;
                 case "PROPERTY":
                     switch (configRule[1]) {
@@ -88,8 +87,7 @@ public class Machine {
     public void registerAlloc(List<List<Pair<String, Integer>>> stepVars) {
         Map<String, List<Integer[]>> ranges = new HashMap<>();
         Map<String, Integer[]> lastFound = new HashMap<>();
-        for (int i = 0; i < stepVars.size(); i++) {
-            List<Pair<String,Integer>> stepVar = stepVars.get(i);
+        for (List<Pair<String, Integer>> stepVar : stepVars) {
             //Detect ranges
             if (stepVar.size() == 1) { //Usage
                 Pair<String, Integer> operand = stepVar.get(0);
@@ -103,10 +101,10 @@ public class Machine {
                 throw new RuntimeException("Unimplemented.");
             } else if (stepVar.size() == 3) { //Assignment
                 //For operands, this is usage, so should bring a temporary closure, unless used again
-                Pair<String,Integer> operand1 = stepVar.get(0);
-                Pair<String,Integer> operand2 = stepVar.get(1);
+                Pair<String, Integer> operand1 = stepVar.get(0);
+                Pair<String, Integer> operand2 = stepVar.get(1);
                 //For destinations, this is an assignment that overrides any old values
-                Pair<String,Integer> destination = stepVar.get(2);
+                Pair<String, Integer> destination = stepVar.get(2);
                 throw new RuntimeException("Unimplemented.");
             } else {
                 throw new RuntimeException("Unexpected variable format of not one or three variables.");

@@ -1,123 +1,138 @@
 package midgard;
 
-import yggdrasil.TagPriority;
-import yggdrasil.TagRecord;
-import yggdrasil.Yggdrasil;
+import logger.Log;
+import tagtable.Tag;
+import tagtable.TagTable;
+import tagtable.TagPriority;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 //Rename to Drapa
-public class CFG {
-    private static final boolean OPTIMIZE_GRAMMAR =  false;
-    public static final Set<CFGProductionType> SUPPORTED_RULE_TYPES = new HashSet<>(Arrays.asList(
+class CFG {
+    //region Global data
+    private static final Set<CFGProductionType> SUPPORTED_RULE_TYPES = new HashSet<>(Collections.singletonList(
             CFGProductionType.SBNF
     ));
+    //endregion
+
+    //region Master collections
     //Easily indexable array of rules. All these are listed in the associated rules
-    private List<CFGProduction> ruleList = new ArrayList<>();
+    private final List<CFGProduction> ruleList = new ArrayList<>();
     private LinkedHashSet<CFGProduction> masterRuleSet = new LinkedHashSet<>();
-    //Tags and rules
-    private Map<Integer, Integer> leftTagMap = new HashMap<>();
-    private List<List<CFGProduction>> rightRules = new ArrayList<>();
-    private boolean emptyGenerated = false;
+    //endregion
+
+    //region Tag/rule mappings
+    //Tag to produce to integer representing index of list of rules
+    private final Map<Tag, Integer> leftTagMap = new HashMap<>();
+    private final List<List<CFGProduction>> rightRules = new ArrayList<>();
+    //endregion
+
+    //region First and follow sets
     //First and follow sets of the grammar
-    private Map<Integer, Set<Integer>> firstSets = new HashMap<>();
-    private Map<Integer, Set<Integer>> followSets = new HashMap<>();
-    private Yggdrasil context;
+    private Map<Tag, Set<Tag>> firstSets = new HashMap<>();
+    private Map<Tag, Set<Tag>> followSets = new HashMap<>();
+    private final TagTable tagTable; //Reference to tagtable
+    //endregion
+
     //Class/rule set initialization
     /**
      * Setup and parse the CFG declaration file.
-     * @param context The context data, AST, and symtable
+     * @param tagTable The context data, AST, and symtable
      * @param config The configuration data.
      */
-    public CFG(Yggdrasil context, String config) {
-        this.context = context;
+    public CFG(TagTable tagTable, String config) {
+        this.tagTable = tagTable;
+        //Split into list, then filter out empty lines and comments
+        List<String> configLines = Arrays.stream(config.trim().split("\n"))
+                .map(String::trim)
+                .filter(t -> !t.isEmpty() && t.charAt(0) != '#')
+                .collect(Collectors.toList());
+        CFGProductionType type = parseFormat(configLines);
+        parseCFG(configLines, type); //Notice side effect
+        //Show results
+        printProductions();
+    }
+
+    //Rule file parsing
+    /**
+     * Tease out the format section of the configuration file.
+     * @param configList The list of lines within the configuration file. Will have the line relevant removed if grammar type exists.
+     * @return The type listed, or SBNF if not declared.
+     */
+    private CFGProductionType parseFormat(List<String> configList) {
         //Read data
-        CFGProductionType rt = CFGProductionType.SBNF;
-        if (config.startsWith(">GRAMMAR_TYPE")) {
-            String type = config.substring(0, config.indexOf("\n"));
-            config = config.substring(type.length()).trim();
-            type = type.trim();
-            String[] split = type.split("\\s+");
-            if (split.length != 2) {
-                System.out.println("Syntax error in grammar declaration. Expected \">GRAMMAR_TYPE TYPE\", found" + type);
-            } else {
-                switch (split[1]) {
-                    case "SBNF":
-                        rt = CFGProductionType.SBNF;
-                        break;
-                    case "BNF":
-                        rt = CFGProductionType.BNF;
-                        break;
-                    case "EBNF":
-                        rt = CFGProductionType.EBNF;
-                        break;
-                    case "CNF":
-                        rt = CFGProductionType.CNF;
-                        break;
-                    case "CFG":
-                        rt = CFGProductionType.CFG;
-                        break;
-                    default:
-                        System.out.println("Unrecognized requested grammar.");
+        CFGProductionType cfgType = CFGProductionType.SBNF;
+        if (configList.get(0).startsWith(">GRAMMAR_TYPE")) {
+            String[] split = configList.remove(0).split("\\s+");
+            String typeStr = split[1].trim();
+            if (split.length == 2) {
+                try {
+                    cfgType = CFGProductionType.valueOf(typeStr);
+                } catch (IllegalArgumentException e) {
+                    e.printStackTrace();
+                    System.out.println("Provided argument: " + typeStr);
                 }
+            } else {
+                System.out.println("Syntax error in grammar declaration. Expected \">GRAMMAR_TYPE TYPE\", found \"" + typeStr + "\"");
             }
-            if (!SUPPORTED_RULE_TYPES.contains(rt)) {
+            if (!SUPPORTED_RULE_TYPES.contains(cfgType)) {
                 throw new RuntimeException("Extended CFG grammar formats unsupported.");
             }
+        } else {
+            System.out.println("SBNF Grammar syntax assumed.");
         }
-        parseCFG(config, rt);
-        if (context.DEBUG) {
-            //Show results
-            System.out.println("/********************Parsed CFG Rules************************/");
-            printProductions();
-            System.out.println("/************************************************************/");
-        }
+        return cfgType;
     }
-    //Rule file parsing
     /**
      * Parse the given input as a list of CFG productions.
      * @param input The input.
      * @param pt The production type.
      */
-    private void parseCFG(String input, CFGProductionType pt) {
-        //Split rules and do preprocessing
-        String[] splitRules = input.split("\n");
-        for (int i = 0; i < splitRules.length; i++) {
-            splitRules[i] = splitRules[i].trim();
-        }
+    private void parseCFG(List<String> input, CFGProductionType pt) {
+        //region Preprocess + parsing
         switch (pt) {
-            case SBNF:
-                for (String splitRule : splitRules) {
-                    if (!splitRule.isEmpty()) {
-                        if (!splitRule.startsWith("#")) { //Not comment
-                            int ruleBreak = splitRule.indexOf("->");
-                            String left = splitRule.substring(0, ruleBreak).trim();
-                            String[] right = splitRule.substring(ruleBreak + 2).trim().split("\\s+");
-                            for (int j = 0; j < right.length; j++) {
-                                right[j] = right[j].trim();
-                            }
-                            //Split rules with respect to rt
-                            //SBNF ensures only one rule per instruction, with all tokens split by whitespace, not including the ->
-                            if (masterRuleSet.isEmpty() && !left.equals(TagRecord.START_LABEL)) {
-                                masterRuleSet.addAll(parseProduction(TagRecord.START_LABEL,
-                                        new ArrayList<>(Arrays.asList(left, TagRecord.EOF_LABEL)), pt));
-                            }
-                            masterRuleSet.addAll(parseProduction(left, Arrays.asList(right), pt));
-                        }
+            case SBNF: {
+                //region SBNF parsing
+                for (String splitRule : input) {
+                    int ruleBreak = splitRule.indexOf("->");
+                    String left = splitRule.substring(0, ruleBreak).trim();
+                    List<String> right = Arrays.stream(splitRule.substring(ruleBreak + 2).trim().split("\\s+"))
+                            .map(String::trim).collect(Collectors.toList());
+
+                    //SBNF ensures only one rule per instruction, with all tokens split by whitespace, not including the ->
+                    //Assume first rule is starting rule
+                    if (masterRuleSet.isEmpty() && !left.equals(TagTable.START_LABEL)) {
+                        masterRuleSet.addAll(parseProduction(
+                                TagTable.START_LABEL,
+                                new ArrayList<>(Arrays.asList(left, TagTable.EOF_LABEL)),
+                                pt
+                        ));
                     }
+                    masterRuleSet.addAll(parseProduction(left, right, pt));
                 }
                 break;
-            default:
+                //endregion
+            } default: {
+                //region Unsupported format
                 System.out.println("Unsupported format.");
                 throw new RuntimeException("Unsupported CFG format.");
+                //endregion
+            }
         }
-        Set<Integer> removed = new HashSet<>();
-        if (OPTIMIZE_GRAMMAR) {
-            removed.addAll(epsilonRemoval());
-            removed.addAll(unitGenRemoval());
-            removed.addAll(uselessRemoval());
-            removed.addAll(isolateRemoval());
-        }
+        //endregion
+
+        //region Grammar optimization
+        //Set<Tag> removed = new HashSet<>();
+        //if (OPTIMIZE_GRAMMAR) {
+        //    removed.addAll(epsilonRemoval());
+        //    removed.addAll(unitGenRemoval());
+        //    removed.addAll(uselessRemoval());
+        //    removed.addAll(isolateRemoval());
+        //}
+        //endregion
+
+        //region Maintain data structures
         //Add rules to the associative containers
         for (CFGProduction rule : masterRuleSet) {
             if (!leftTagMap.containsKey(rule.getLeft())) {
@@ -127,18 +142,15 @@ public class CFG {
             rightRules.get(leftTagMap.get(rule.getLeft())).add(rule);
             ruleList.add(rule);
         }
-        if (context.tagCount() - context.terminalCount() != leftTagMap.size() + removed.size()) {
-            Set<Integer> missing = new HashSet<>();
-            for (int i = context.terminalCount(); i < context.tagCount(); i++) {
-                missing.add(i);
-            }
+        //Check for unreachable conditions
+        if (tagTable.tagCount() - tagTable.terminalTagCount() != leftTagMap.size()) {
+            Set<Tag> missing = tagTable.fetchAllTags().stream()
+                    .filter(t -> !tagTable.isTerminalTag(t)).collect(Collectors.toSet());
             missing.removeAll(leftTagMap.keySet());
-            Set<String> translated = new HashSet<>();
-            for (Integer k : missing) {
-                translated.add(context.tagDecode(k, TagPriority.SUB));
-            }
-            throw new RuntimeException("CFG contains nonterminals " + translated + " without rules.");
+            throw new RuntimeException("CFG contains nonterminals " + missing + " without rules.");
         }
+        //endregion
+
         produceFirstAndFollowSets();
     }
 
@@ -153,31 +165,36 @@ public class CFG {
     private List<CFGProduction> parseProduction(String left, List<String> rightSeries, CFGProductionType type) {
         List<CFGProduction> parsedProductions = new ArrayList<>();
         switch (type) {
-            case SBNF:
-                parsedProductions.add(new CFGProduction(left, rightSeries, context));
+            case SBNF: {
+                parsedProductions.add(new CFGProduction(left, rightSeries, tagTable));
                 break;
-            default:
+            } default: {
                 System.out.println("Unsupported format.");
                 throw new RuntimeException("Unsupported CFG format.");
+            }
         }
         return parsedProductions;
     }
+
     /**
      * Prints the productions.
      */
     private void printProductions() {
-        for (Integer tag : leftTagMap.keySet()) {
+        Log.dln("/********************Parsed CFG Rules************************/");
+        for (Tag tag : leftTagMap.keySet()) {
             for (CFGProduction rule : rightRules.get(leftTagMap.get(tag))) {
-                System.out.println(rule);
+                Log.dln(rule.toString());
             }
         }
+        Log.dln("/************************************************************/");
     }
+
     //Rule retrieval
     /**
      * Fetch the initial production.
      * @return The initial production.
      */
-    public Integer fetchZeroInstruction() {
+    public Tag fetchZeroInstruction() {
         return masterRuleSet.iterator().next().getLeft();
     }
     /**
@@ -185,8 +202,8 @@ public class CFG {
      * @param left The number representing a non-terminal label.
      * @return The rules associated with the non-terminal.
      */
-    public List<CFGProduction> fetchRulesForLeft(Integer left) {
-        if (!context.isTerminal(left)) {
+    public List<CFGProduction> fetchRulesForLeft(Tag left) {
+        if (!tagTable.isTerminalTag(left)) {
             return rightRules.get(leftTagMap.get(left));
         } else {
             return new ArrayList<>();
@@ -215,300 +232,7 @@ public class CFG {
     public CFGProduction decodeProduction(Integer index) {
         return ruleList.get(index);
     }
-    //CFG simplification
-    /**
-     * Remove epsilon production, where non-terminals become the terminal empty string.
-     *
-     * @return A set of integers representing non-terminal labels that are no longer being used by the new rules.
-     */
-    private Set<Integer> epsilonRemoval() {
-        System.out.println("Removing epsilon rules.");
 
-        System.out.println("Finding nullables.");
-        Set<Integer> nullables = new HashSet<>();
-        boolean done = false;
-        while (!done) {
-            done = true;
-            List<Integer> qualifiedRemoval = new ArrayList<>();
-            for (int i = 0; i < context.tagCount(); i++) {
-                qualifiedRemoval.add(0);
-            }
-            for (CFGProduction rule : masterRuleSet) {
-                if (rule.getRight().contains(context.tagEncode(TagRecord.EMP_LABEL, TagPriority.PAR))) {
-                    if (rule.getRightCount() == 1 && !nullables.contains(rule.getLeft())) {
-                        //
-                        nullables.add(rule.getLeft());
-                        qualifiedRemoval.set(rule.getLeft(), qualifiedRemoval.get(rule.getLeft()) + 1);
-                    } else {
-                        for (int i = rule.getRightCount() - 1; i >= 0; i--) {
-                            if ((int) rule.getRightElement(i) == context.tagEncode(TagRecord.EMP_LABEL, TagPriority.PAR)) {
-                                rule.getRight().remove(i);
-                            }
-                        }
-                    }
-                } else {
-                    if (nullables.containsAll(rule.getRight())
-                            && !nullables.contains(rule.getLeft())) {
-                        nullables.add(rule.getLeft());
-                        qualifiedRemoval.set(rule.getLeft(), qualifiedRemoval.get(rule.getLeft()) + 1);
-                    }
-                }
-            }
-        }
-        System.out.println("Nullables: " + nullables);
-        //Generate all combos
-        done = false;
-        Set<CFGProduction> nextRuleSet = new HashSet<>();
-        nextRuleSet.addAll(masterRuleSet);
-        while (!done) {
-            Set<CFGProduction> generatedRuleSet = new HashSet<>();
-            {
-                for (CFGProduction rule : nextRuleSet) {
-                    for (int i = 0; i < rule.getRightCount(); i++) {
-                        if (rule.getRightCount() != 1 && nullables.contains(rule.getRightElement(i))) {
-                            List<Integer> genRight = new ArrayList<>();
-                            genRight.addAll(rule.getRight());
-                            genRight.remove(i);
-                            generatedRuleSet.add(new CFGProduction(rule.getLeft(), genRight, context));
-                        }
-                    }
-                }
-                nextRuleSet = generatedRuleSet;
-                masterRuleSet.addAll(generatedRuleSet);
-                done = generatedRuleSet.isEmpty();
-            }
-        }
-        System.out.println("/****************New reduced epsilon rule set*****************/");
-        for (CFGProduction rule : masterRuleSet) {
-            System.out.println(rule);
-        }
-        System.out.println("/*************************************************************/");
-        Set <Integer> unitEpsilonRuleSet = new HashSet<>();
-        Set <Integer> weakEpsilonRemove = new HashSet<>();
-        for (CFGProduction rule : masterRuleSet) {
-            if (rule.getRightCount() == 1 &&
-                    (int) rule.getRightElement(0) == context.tagEncode(TagRecord.EMP_LABEL, TagPriority.PAR)) {
-                unitEpsilonRuleSet.add(rule.getLeft());
-            } else {
-                weakEpsilonRemove.add(rule.getLeft());
-            }
-        }
-        System.out.println("Unit epsilon rule nonterminals: " + unitEpsilonRuleSet);
-        System.out.println("Meaningful nonterminals: " + weakEpsilonRemove);
-        nextRuleSet = new LinkedHashSet<>();
-        for (CFGProduction rule : masterRuleSet) {
-            if (weakEpsilonRemove.contains(rule.getLeft())) {
-                if (rule.getRightCount() > 1 ||
-                        (int) rule.getRightElement(0) != context.tagEncode(TagRecord.EMP_LABEL, TagPriority.PAR)) {
-                    nextRuleSet.add(rule);
-                }
-            } else if (!unitEpsilonRuleSet.contains(rule.getLeft())) {
-                boolean found = false;
-                for (Integer right : rule.getRight()) {
-                    if (unitEpsilonRuleSet.contains(right)) found = true;
-                }
-                if (found) continue;
-                nextRuleSet.add(rule);
-            }
-        }
-        masterRuleSet = (LinkedHashSet<CFGProduction>) nextRuleSet;
-        System.out.println("/********************New non-epsilon rule set*****************/");
-        for (CFGProduction rule : masterRuleSet) {
-            System.out.println(rule);
-        }
-        System.out.println("/*************************************************************/");
-        unitEpsilonRuleSet.removeAll(weakEpsilonRemove);
-        System.out.println("Epsilon rules removed.");
-        return unitEpsilonRuleSet;
-    }
-    /**
-     * Remove unit generations. Only useful for analyzing grammars, not so much for parsing.
-     *
-     * Unit generations are rules in the for of A -> B, B -> a, or similar.
-     *
-     * @return A set of integers representing non-terminal labels that are no longer being used by the new rules.
-     */
-    private Set<Integer> unitGenRemoval() {
-        System.out.println("Removing unit productions.");
-        Set<CFGProduction> unitProductions = new HashSet<>();
-        Set<CFGProduction> otherProductions = new HashSet<>();
-        for (CFGProduction rule : masterRuleSet) {
-            if (rule.getRightCount() == 1 &&
-                    !context.isTerminal(rule.getLeft()) &&
-                    !context.isTerminal(rule.getRightElement(0))) {
-                unitProductions.add(rule);
-            } else {
-                otherProductions.add(rule);
-            }
-        }
-        System.out.println("/***************Located unit production rules*****************/");
-        for (CFGProduction rule : unitProductions) {
-            System.out.println(rule);
-        }
-        System.out.println("/*************************************************************/");
-        System.out.println("/***************Located other production rules****************/");
-        for (CFGProduction rule : otherProductions) {
-            System.out.println(rule);
-        }
-        System.out.println("/*************************************************************/");
-        Set<CFGProduction> newRules = new HashSet<>();
-        for (CFGProduction rule : unitProductions) {
-            for (CFGProduction subRule : otherProductions) {
-                if (rule.getRightElement(0) == subRule.getLeft()) {
-                    newRules.add(new CFGProduction(rule.getLeft(), subRule.getRight(), context));
-                }
-            }
-        }
-        System.out.println("/***************Rules to maintain equivalence****************/");
-        for (CFGProduction rule : newRules) {
-            System.out.println(rule);
-        }
-        System.out.println("/*************************************************************/");
-        masterRuleSet.removeAll(unitProductions);
-        masterRuleSet.addAll(newRules);
-        System.out.println("/**************New unit-production-less rule set**************/");
-        for (CFGProduction rule : masterRuleSet) {
-            System.out.println(rule);
-        }
-        System.out.println("/*************************************************************/");
-        Set<Integer> droppedNonTerms = new HashSet<>();
-        for (CFGProduction rule : unitProductions) {
-            boolean found = false;
-            for (CFGProduction subRule : masterRuleSet) {
-                if (subRule.getLeft() == rule.getLeft()) {
-                    found = true;
-                    break;
-                }
-            }
-            if (found) continue;
-            droppedNonTerms.add(rule.getLeft());
-        }
-        System.out.println("/********************Dropped non-terminals********************/");
-        for (Integer term : droppedNonTerms) {
-            System.out.println(term);
-        }
-        System.out.println("/*************************************************************/");
-        System.out.println("Unit productions removed");
-        return droppedNonTerms;
-    }
-    /**
-     * Removes rules that do not terminate, specifically non-terminals that are not reached,
-     * or rules that are recursive, but do not have a terminal state such as C -> aCb.
-     *
-     * @return A set of integers representing non-terminal labels that are no longer being used by the new rules.
-     */
-    private Set<Integer> uselessRemoval() {
-        System.out.println("Removing useless rules.");
-        Set<Integer> terminalGenerator = new HashSet<>();
-        Set<CFGProduction> terminalRules = new HashSet<>();
-        for (CFGProduction rule : masterRuleSet) {
-            boolean found = false;
-            for (Integer k : rule.getRight()) {
-                if (!context.isTerminal(k)) {
-                    found = true;
-                    break;
-                }
-            }
-            if (found) continue;
-            terminalGenerator.add(rule.getLeft());
-            terminalRules.add(rule);
-        }
-        System.out.println("/******************Initial terminal rule set******************/");
-        for (CFGProduction rule : terminalRules) {
-            System.out.println(rule);
-        }
-        System.out.println("/*************************************************************/");
-        boolean done = false;
-        while (!done) {
-            done = true;
-            for (CFGProduction rule : masterRuleSet) {
-                if (!terminalRules.contains(rule)) {
-                    boolean found = false;
-                    for (Integer k : rule.getRight()) {
-                        if (!context.isTerminal(k) && !terminalGenerator.contains(k)) {
-                            found = true;
-                        }
-                    }
-                    if (found) continue;
-                    done = false;
-                    terminalGenerator.add(rule.getLeft());
-                    terminalRules.add(rule);
-                }
-            }
-        }
-        Set<Integer> removed = new HashSet<>();
-        Set<CFGProduction> removedRules = new HashSet<>();
-        for (CFGProduction rule : masterRuleSet) {
-            if (!terminalGenerator.contains(rule.getLeft())) {
-                removed.add(rule.getLeft());
-            }
-            if (!terminalRules.contains(rule)) {
-                removedRules.add(rule);
-            }
-        }
-        masterRuleSet.removeAll(removedRules);
-        System.out.println("/********************New reduced rule set*********************/");
-        for (CFGProduction rule : masterRuleSet) {
-            System.out.println(rule);
-        }
-        System.out.println("/*************************************************************/");
-        System.out.println("/************************Removed rules************************/");
-        for (CFGProduction rule : removedRules) {
-            System.out.println(rule);
-        }
-        System.out.println("/*************************************************************/");
-        System.out.println("Useless rules removed.");
-        return removed;
-    }
-    /**
-     * Remove isolated and unreachable non-terminals more specifically than uselessRemoval. This may be slightly
-     * helpful for CFG processing.
-     *
-     * @return A set of integers representing non-terminal labels that are no longer being used by the new rules.
-     */
-    private Set<Integer> isolateRemoval() {
-        Set<Integer> accessible =
-                new HashSet<>(Collections.singleton(context.tagEncode(TagRecord.START_LABEL, TagPriority.SUB)));
-        Set<Integer> nonTerms = new HashSet<>();
-        for (CFGProduction rule : masterRuleSet) {
-            nonTerms.add(rule.getLeft());
-            System.out.println(rule);
-        }
-        boolean done = false;
-        while (!done) {
-            Set<Integer> nextAccessible = new HashSet<>();
-            for (CFGProduction rule : masterRuleSet) {
-                if (accessible.contains(rule.getLeft())) {
-                    for (Integer k : rule.getRight()) {
-                        if (!accessible.contains(k)) {
-                            nextAccessible.add(k);
-                        }
-                    }
-                }
-            }
-            accessible.addAll(nextAccessible);
-            done = nextAccessible.isEmpty();
-        }
-        System.out.println("/******************Initial accessible set*********************/");
-        for (Integer k : accessible) {
-            System.out.println(context.tagDecode(k, TagPriority.SUB));
-        }
-        System.out.println("/*************************************************************/");
-        LinkedHashSet<CFGProduction> nextMaster = new LinkedHashSet<>();
-        for (CFGProduction rule : masterRuleSet) {
-            if (accessible.contains(rule.getLeft())) {
-                nextMaster.add(rule);
-            }
-        }
-        masterRuleSet = nextMaster;
-        nonTerms.removeAll(accessible);
-        System.out.println("/************Set with unreachable states removed**************/");
-        for (CFGProduction k : masterRuleSet) {
-            System.out.println(k);
-        }
-        System.out.println("/*************************************************************/");
-        return nonTerms;
-    }
     //First and follow sets
     /**
      * Produce the first and follow sets of the CFG
@@ -522,9 +246,9 @@ public class CFG {
      * lexeme represented by said label.
      */
     private void produceFirstSet() {
-        Map<Integer, Set<Integer>> firstSets = new HashMap<>();
-        for (Integer k = 0; k < context.terminalCount(); k++) {
-            firstSets.put(k, new HashSet<>(Collections.singleton(k)));
+        Map<Tag, Set<Tag>> firstSets = new HashMap<>();
+        for (Tag t: tagTable.fetchTags(TagPriority.LEX)) {
+            firstSets.put(t, new HashSet<>(Collections.singleton(t)));
         }
         for (CFGProduction rule : masterRuleSet) {
             if (!firstSets.containsKey(rule.getLeft())) {
@@ -536,60 +260,57 @@ public class CFG {
             done = true;
             for (CFGProduction rule : masterRuleSet) {
                 boolean addEmpty = true;
-                for (Integer k : rule.getRight()) {
-                    for (Integer j : firstSets.get(k)) {
-                        if (!firstSets.get(rule.getLeft()).contains(j) &&
-                                j != context.tagEncode(TagRecord.EMP_LABEL, TagPriority.SUB)) {
+                for (Tag k : rule.getRight()) {
+                    for (Tag j : firstSets.get(k)) {
+                        if (!firstSets.get(rule.getLeft()).contains(j) && (!j.equals(tagTable.EMP_TAG))) {
                             firstSets.get(rule.getLeft()).add(j);
                             done = false;
                         }
                     }
-                    if (!firstSets.get(k).contains(context.tagEncode(TagRecord.EMP_LABEL, TagPriority.SUB))) {
+                    if (!firstSets.get(k).contains(tagTable.EMP_TAG)) {
                         addEmpty = false;
                         break;
                     }
                 }
                 if (addEmpty) {
-                    firstSets.get(rule.getLeft()).add(context.tagEncode(TagRecord.EMP_LABEL, TagPriority.SUB));
+                    firstSets.get(rule.getLeft()).add(tagTable.EMP_TAG);
                 }
             }
         }
-        if (context.DEBUG) {
-            System.out.println("/********************First Sets Generated*********************/");
-            for (Integer source : firstSets.keySet()) {
-                System.out.println(source + " (" + context.tagDecode(source, TagPriority.SUB) + "): " +
-                        firstSets.get(source));
-            }
-            System.out.println("/*************************************************************/");
+        Log.dln("/********************First Sets Generated*********************/");
+        for (Tag source : firstSets.keySet()) {
+            Log.dln(source + " (" + source.getValue() + "): " +
+                    firstSets.get(source));
         }
+        Log.dln("/*************************************************************/");
         this.firstSets = firstSets;
     }
     /**
      * Produce, for each non-terminal, all characters that can directly follow the non-terminal.
      */
     private void produceFollowSet() {
-        Map<Integer, Set<Integer>> followSets = new HashMap<>();
-        for (int i = context.terminalCount(); i < context.tagCount(); i++) {
-            followSets.put(i, new HashSet<>());
+        Map<Tag, Set<Tag>> followSets = new HashMap<>();
+        for (Tag t : tagTable.fetchTags(TagPriority.PAR)) {
+            followSets.put(t, new HashSet<>());
         }
         followSets.get(
-                rightRules.get(leftTagMap.get(context.tagEncode(TagRecord.START_LABEL, TagPriority.SUB))).get(0).getLeft()
-        ).add(context.tagEncode(TagRecord.EOF_LABEL, TagPriority.SUB));
+                rightRules.get(leftTagMap.get(tagTable.START_TAG)).get(0).getLeft()
+        ).add(tagTable.EOF_TAG);
         boolean done = false;
         while (!done) {
             done = true;
             for (CFGProduction rule : masterRuleSet) {
                 //Production A -> aBc
                 for (int i = 0; i < rule.getRightCount() - 1; i++) {
-                    Set<Integer> followSetB = followSets.get(rule.getRightElement(i));
-                    if (!context.isTerminal(rule.getRightElement(i))) {
+                    Set<Tag> followSetB = followSets.get(rule.getRightElement(i));
+                    if (!tagTable.isTerminalTag(rule.getRightElement(i))) {
                         boolean found = true;
                         //For each c_j from one after i to da ENDZ
                         for (int j = i + 1; j < rule.getRightCount(); j++) {
                             boolean foundEpsilon = false;
-                            Integer cjTag = rule.getRightElement(j);
-                            if (context.isTerminal(rule.getRightElement(j))) { //Terminal or empty
-                                if (!Objects.equals(cjTag, context.tagEncode(TagRecord.EMP_LABEL, TagPriority.SUB))) {
+                            Tag cjTag = rule.getRightElement(j);
+                            if (tagTable.isTerminalTag(rule.getRightElement(j))) { //Terminal or empty
+                                if (!Objects.equals(cjTag, tagTable.EMP_TAG)) {
                                     if (!followSetB.contains(rule.getRightElement(j))) {
                                         //Add c_j to follow(B)
                                         followSetB.add(cjTag);
@@ -602,14 +323,13 @@ public class CFG {
                                 }
                             } else { //Nonterminal
                                 //For each member of FIRST(c_j)
-                                for (Integer k : firstSets.get(cjTag)) {
-                                    if (!followSetB.contains(k) &&
-                                            (int) k != context.tagEncode(TagRecord.EMP_LABEL, TagPriority.SUB)) {
+                                for (Tag k : firstSets.get(cjTag)) {
+                                    if (!followSetB.contains(k) && k != tagTable.EMP_TAG) {
                                         //Add k to follow(B)
                                         done = false;
                                         followSetB.add(k);
                                     }
-                                    if ((int) k == context.tagEncode(TagRecord.EMP_LABEL, TagPriority.SUB)) {
+                                    if (k == tagTable.EMP_TAG) {
                                         foundEpsilon = true;
                                     }
                                 }
@@ -622,7 +342,7 @@ public class CFG {
                         }
                         //FIRST(c) has epsilon, add follows
                         if (found) {
-                            for (Integer k : followSets.get(rule.getLeft())) {
+                            for (Tag k : followSets.get(rule.getLeft())) {
                                 if (!followSets.get(rule.getRightElement(i)).contains(k)) {
                                     done = false;
                                     followSets.get(rule.getRightElement(i)).add(k);
@@ -632,8 +352,8 @@ public class CFG {
                     }
                 }
                 //A -> aB
-                for (Integer k : followSets.get(rule.getLeft())) {
-                    if (!context.isTerminal(rule.getRightElement(rule.getRightCount() - 1))) {
+                for (Tag k : followSets.get(rule.getLeft())) {
+                    if (!tagTable.isTerminalTag(rule.getRightElement(rule.getRightCount() - 1))) {
                         if (!followSets.get(rule.getRightElement(rule.getRightCount() - 1)).contains(k)) {
                             done = false;
                             followSets.get(rule.getRightElement(rule.getRightCount() - 1)).add(k);
@@ -642,13 +362,11 @@ public class CFG {
                 }
             }
         }
-        if (context.DEBUG) {
-            System.out.println("/********************Follow Sets Generated********************/");
-            for (Integer source : followSets.keySet()) {
-                System.out.println(source + " (" + context.tagDecode(source, TagPriority.SUB) + "): " + followSets.get(source));
-            }
-            System.out.println("/*************************************************************/");
+        Log.dln("/********************Follow Sets Generated********************//*");
+        for (Tag source : followSets.keySet()) {
+            Log.dln(source + " (" + source.getValue() + "): " + followSets.get(source));
         }
+        Log.dln("/*************************************************************//*");
         this.followSets = followSets;
     }
     /**
@@ -657,7 +375,7 @@ public class CFG {
      * @param nonterm The non-terminal-representing integer.
      * @return A set of integers representing all the terminals the given non-terminal can be in front of.
      */
-    public Set<Integer> getFirstSet(Integer nonterm) {
+    public Set<Tag> getFirstSet(Tag nonterm) {
         return firstSets.get(nonterm);
     }
     /**
@@ -666,7 +384,7 @@ public class CFG {
      * @param nonterm The non-terminal-representing integer.
      * @return A set of integers representing all the terminals the given non-terminal can be trailed by.
      */
-    public Set<Integer> getFollowSet(Integer nonterm) {
+    public Set<Tag> getFollowSet(Tag nonterm) {
         return followSets.get(nonterm);
     }
 }

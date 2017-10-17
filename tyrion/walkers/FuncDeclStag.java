@@ -1,8 +1,10 @@
-import asgard.ScopeChanger;
 import asgard.Stag;
-import yggdrasil.*;
-
-import java.util.ArrayList;
+import tagtable.TagPriority;
+import tagtable.TagTable;
+import yggdrasil.Branch;
+import yggdrasil.Leaf;
+import yggdrasil.Nidhogg;
+import yggdrasil.PathHolder;
 
 public class FuncDeclStag extends Stag {
     private boolean inFunc = false;
@@ -10,8 +12,8 @@ public class FuncDeclStag extends Stag {
 
     private int suffix;
 
-    public FuncDeclStag(Yggdrasil parent) {
-        super(parent, true);
+    public FuncDeclStag(PathHolder pathHolder, TagTable tagTable, Nidhogg symTable) {
+        super(tagTable, pathHolder, symTable, true);
     }
 
     @Override
@@ -20,7 +22,7 @@ public class FuncDeclStag extends Stag {
     }
     @Override
     protected boolean onUpEnter(Branch branch) {
-        if (branch.getTag() == parent.tagEncode("FUNC_DEC", TagPriority.PAR)) {
+        if (branch.getTag().equals(super.tagTable.addElseFindTag(TagPriority.PAR, "FUNC_DEC"))) {
             //System.out.println("We have here, a declaration of peace.");
             if (inFunc) {
                 throw new RuntimeException("Error. Function has been declared inside a function. Aborting.");
@@ -31,16 +33,16 @@ public class FuncDeclStag extends Stag {
     }
     @Override
     protected boolean onDownEnter(Branch branch, Branch child) {
-        if (branch.getTag() == parent.tagEncode("FUNC_DEC", TagPriority.SUB)) {
-            if (child.getTag() == parent.tagEncode("NAME", TagPriority.SUB)) {
+        if (branch.getTag().equals(super.tagTable.addElseFindTag(TagPriority.SUB, "FUNC_DEC"))) {
+            if (child.getTag().equals(super.tagTable.addElseFindTag(TagPriority.SUB, "NAME"))) {
                 //System.out.println("\tFunction name: " + ((Leaf) child).getSubstring());
-                parent.addSymAtRoot(((Leaf) child).getSubstring(), "function");
+                super.symTable.addSym(((Leaf) child).getSubstring(), "function", -1);
                 lastFuncName = ((Leaf) child).getSubstring();
-            } else if (child.getTag() == parent.tagEncode("D_ARGLIST", TagPriority.SUB)) {
+            } else if (child.getTag().equals(super.tagTable.addElseFindTag(TagPriority.SUB, "D_ARGLIST"))) {
                 //System.out.println("\tArgument list: ");
-                DArgListStag argWalker = new DArgListStag(parent, lastFuncName);
+                DArgListStag argWalker = new DArgListStag(super.holder, super.tagTable, super.symTable, lastFuncName);
                 Stag.startWalk(argWalker, child, false);
-            } else if (child.getTag() == parent.tagEncode("STMT", TagPriority.SUB)) {
+            } else if (child.getTag().equals(super.tagTable.addElseFindTag(TagPriority.SUB, "STMT"))) {
                 //System.out.println("\tStatement begins.");
             }
         }
@@ -48,7 +50,7 @@ public class FuncDeclStag extends Stag {
     }
     @Override
     protected boolean onUpExit(Branch branch) {
-        if (branch.getTag() == parent.tagEncode("FUNC_DEC", TagPriority.PAR)) {
+        if (branch.getTag().equals(super.tagTable.addElseFindTag(TagPriority.PAR, "FUNC_DEC"))) {
             //System.out.println("The function has ended.");
             inFunc = false;
             //System.out.println();

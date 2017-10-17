@@ -2,6 +2,9 @@ package niflheim;
 
 import bragi.Skald;
 import javafx.util.Pair;
+import tagtable.Tag;
+import tagtable.TagPriority;
+import tagtable.TagTable;
 import yggdrasil.*;
 
 import java.io.IOException;
@@ -26,8 +29,8 @@ public class Helvegar extends Cosmos {
      * The constructor of Helvegar.
      * @param context The context data, AST, and symtable.
      */
-    public Helvegar(Yggdrasil context) {
-        super(context);
+    public Helvegar(PathHolder context, TagTable tagTable) {
+        super(context, tagTable);
         System.out.println("Helvegar configured.");
     }
     /**
@@ -35,7 +38,7 @@ public class Helvegar extends Cosmos {
      */
     @Override
     protected void configure() {
-        regexSet = new Hel(context);
+        regexSet = new Hel(getContext(), getTagTable());
     }
 
     /**
@@ -45,7 +48,7 @@ public class Helvegar extends Cosmos {
     public void loadStream(String inputFile) {
         try {
             resetStream(new String(Files.readAllBytes(Paths.get(
-                    context.BASE_DIR + context.SAMPLE_BASE_DIR + inputFile
+                    getContext().BASE_DIR + getContext().SAMPLE_BASE_DIR + inputFile
                     )), StandardCharsets.UTF_8
             ));
         } catch (IOException e) {
@@ -67,24 +70,24 @@ public class Helvegar extends Cosmos {
      */
     public Leaf next() {
         //Use the ignore parser here
-        if (regexSet.getIgnoreParser() != null) {
-            List<Integer> mark2 = regexSet.getIgnoreParser().match(stream, mark);
+        if (regexSet.getIgnoreRegex() != null) {
+            List<Integer> mark2 = regexSet.getIgnoreRegex().match(stream, mark);
             if (mark2 != null && !mark2.isEmpty()) {
                 mark = mark2.get(mark2.size() - 1);
             }
         }
         //Find next lexeme
-        for (Pair<Integer, Skald> parserPair : regexSet.getParsers()) {
+        for (Pair<Tag, Skald> parserPair : regexSet.getRegexes()) {
             List<Integer> kList = parserPair.getValue().match(stream, mark);
             if (!kList.isEmpty()) {
                 int k = kList.get(kList.size() - 1);
                 if (k > mark) {
-                    Leaf lexeme = new Leaf(parserPair.getKey(), stream.substring(mark, k),null, context);
+                    Leaf lexeme = new Leaf(parserPair.getKey(), stream.substring(mark, k));
                     mark = k;
                     return lexeme;
                 }
             }
         }
-        return new Leaf(context.tagEncode(TagRecord.EOF_LABEL, TagPriority.LEX), "", null, context);
+        return new Leaf(getTagTable().EOF_TAG, "");
     }
 }
