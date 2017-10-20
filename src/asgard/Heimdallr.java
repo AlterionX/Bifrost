@@ -1,7 +1,8 @@
 package asgard;
 
 import logger.Log;
-import yggdrasil.*;
+import ast.*;
+import symtable.Nidhogg;
 
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;

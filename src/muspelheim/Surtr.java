@@ -2,9 +2,8 @@ package muspelheim;
 
 import javafx.util.Pair;
 import tagtable.TagTable;
-import yggdrasil.Cosmos;
-import yggdrasil.PathHolder;
-import yggdrasil.Yggdrasil;
+import ast.Cosmos;
+import config.PathHolder;
 
 import java.io.BufferedWriter;
 import java.io.IOException;

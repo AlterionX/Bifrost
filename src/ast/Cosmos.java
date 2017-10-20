@@ -1,5 +1,6 @@
-package yggdrasil;
+package ast;
 
+import config.PathHolder;
 import tagtable.TagTable;
 
 public abstract class Cosmos {

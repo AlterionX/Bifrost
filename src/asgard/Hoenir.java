@@ -3,11 +3,10 @@ package asgard;
 import javafx.util.Pair;
 import tagtable.Tag;
 import tagtable.TagTable;
-import yggdrasil.Branch;
+import ast.Branch;
 import tagtable.TagPriority;
-import yggdrasil.Nidhogg;
-import yggdrasil.PathHolder;
-import yggdrasil.Yggdrasil;
+import symtable.Nidhogg;
+import config.PathHolder;
 
 import java.io.BufferedWriter;
 import java.io.IOException;

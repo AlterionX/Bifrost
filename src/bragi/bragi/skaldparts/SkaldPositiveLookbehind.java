@@ -1,14 +1,15 @@
 package bragi.bragi.skaldparts;
 
 import bragi.Lausavisa;
-import bragi.SkaldComponent;
+import bragi.NFA;
+import bragi.RegEx;
 
-public class SkaldPositiveLookbehind implements SkaldComponent {
-    private SkaldComponent internal;
-    public SkaldPositiveLookbehind(SkaldComponent regex) {
+public class SkaldPositiveLookbehind implements RegEx {
+    private RegEx internal;
+    public SkaldPositiveLookbehind(RegEx regex) {
         internal = regex;
     }
-    public SkaldComponent reduce() {
+    public RegEx reduce() {
         internal = internal.reduce();
         return internal == null ? null : this;
     }
@@ -23,10 +24,10 @@ public class SkaldPositiveLookbehind implements SkaldComponent {
     public StringBuilder generateString() {
         return (new StringBuilder()).append("(?<=(").append(internal.generateString()).append("))");
     }
-    public Lausavisa generateNFA() {
+    public NFA generateNFA() {
         return new Lausavisa(false, true, internal.reverse().generateNFA().tablify().generateDFA());
     }
-    public SkaldComponent reverse() {
+    public RegEx reverse() {
         return new SkaldPositiveLookahead(internal.reverse());
     }
 }

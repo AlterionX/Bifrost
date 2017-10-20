@@ -1,15 +1,16 @@
 package bragi.bragi.skaldparts;
 
 import bragi.Lausavisa;
-import bragi.SkaldComponent;
+import bragi.NFA;
+import bragi.RegEx;
 
-public class SkaldKleene implements SkaldComponent {
-    private SkaldComponent internal;
-    public SkaldKleene(SkaldComponent regex) {
+public class SkaldKleene implements RegEx {
+    private RegEx internal;
+    public SkaldKleene(RegEx regex) {
         internal = regex;
     }
 
-    public SkaldComponent reduce() {
+    public RegEx reduce() {
         internal = internal.reduce();
         if (internal instanceof SkaldKleene) {
             return internal;
@@ -27,12 +28,12 @@ public class SkaldKleene implements SkaldComponent {
     public StringBuilder generateString() {
         return (new StringBuilder()).append("(").append(internal.generateString()).append(")*");
     }
-    public Lausavisa generateNFA() {
-        Lausavisa nfa = internal.generateNFA().kleeneWrap();
+    public NFA generateNFA() {
+        NFA nfa = internal.generateNFA().kleeneWrap();
         nfa.addStringToTerminal(this.generateString().toString());
         return nfa;
     }
-    public SkaldComponent reverse() {
+    public RegEx reverse() {
         return new SkaldKleene(internal.reverse());
     }
 }

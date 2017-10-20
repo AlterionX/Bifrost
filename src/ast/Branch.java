@@ -1,7 +1,6 @@
-package yggdrasil;
+package ast;
 
 import tagtable.Tag;
-import tagtable.TagPriority;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -27,7 +26,7 @@ public class Branch implements Seedling {
     public Seedling getParent() {
         return parent;
     }
-    public void lrTraverse(TreeTraverser func, int level) {
+    public void lrTraverse(BranchProcessFunction func, int level) {
         func.processBranch(this, level);
         for (Branch aChildren : children) {
             aChildren.lrTraverse(func, level + 1);

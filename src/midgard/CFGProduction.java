@@ -3,7 +3,7 @@ package midgard;
 import tagtable.Tag;
 import tagtable.TagPriority;
 import tagtable.TagTable;
-import yggdrasil.*;
+import ast.*;
 
 import java.util.*;
 

@@ -1,18 +1,18 @@
-package yggdrasil;
+package ast;
 
 import asgard.Heimdallr;
+import config.PathHolder;
 import logger.Log;
 import midgard.Jormungandr;
 import muspelheim.Surtr;
 import niflheim.Helvegar;
 import ragnarok.Idavoll;
+import symtable.Nidhogg;
 import tagtable.TagTable;
 
 import java.util.*;
 
 public class Yggdrasil implements WorldTree {
-    private boolean debug;
-
     //Main tester, calls launch.
     public static void main(String[] args) {
         Yggdrasil yggdrasil = new Yggdrasil("hello.tyr");
@@ -113,9 +113,5 @@ public class Yggdrasil implements WorldTree {
     //Compiler symtable
     public Nidhogg getSymTable() {
         return symTable;
-    }
-
-    public void setDebug(boolean debug) {
-        this.debug = debug;
     }
 }

@@ -1,4 +1,4 @@
-package yggdrasil;
+package ast;
 
 import logger.Log;
 
@@ -33,10 +33,10 @@ public interface Seedling {
 
     /**
      * Traverses the tree, from the leftmost child (the first child in proper CFG-base order) to the rightmost.
-     * @param func A function to be called with the TreeTraverser interface.
+     * @param func A function to be called with the BranchProcessFunction interface.
      * @param level
      */
-    void lrTraverse(TreeTraverser func, int level);
+    void lrTraverse(BranchProcessFunction func, int level);
 
     void setLevel(int level);
     int getLevel();

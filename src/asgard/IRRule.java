@@ -1,9 +1,8 @@
 package asgard;
 
-import yggdrasil.Branch;
-import yggdrasil.Leaf;
-import yggdrasil.Nidhogg;
-import yggdrasil.Yggdrasil;
+import ast.Branch;
+import ast.Leaf;
+import symtable.Nidhogg;
 
 import java.util.LinkedList;
 import java.util.List;

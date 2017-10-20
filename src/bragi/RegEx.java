@@ -1,12 +1,12 @@
 package bragi;
 
-public interface SkaldComponent {
+public interface RegEx {
     /**
      * Simplify the regex (sub)expression to simpler terms.
      *
      * @return The simplified regex. This can be null.
      */
-    SkaldComponent reduce();
+    RegEx reduce();
 
     //Should always have been reduced before any of these methods are called
     /**
@@ -26,7 +26,7 @@ public interface SkaldComponent {
      *
      * @return The NFA generated.
      */
-    Lausavisa generateNFA();
+    NFA generateNFA();
 
-    SkaldComponent reverse();
+    RegEx reverse();
 }

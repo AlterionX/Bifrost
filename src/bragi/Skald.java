@@ -4,11 +4,11 @@ import bragi.bragi.skaldparts.*;
 
 import java.util.List;
 
-public class Skald implements SkaldComponent {
-    private SkaldComponent core;
+public class Skald implements RegEx {
+    private RegEx core;
     private final String pattern;
-    private Lausavisa nfa;
-    private Drottkvaett dfa;
+    private NFA nfa;
+    private DFA dfa;
 
     private final String alph;
 
@@ -39,9 +39,7 @@ public class Skald implements SkaldComponent {
         return input.charAt(mark);
     }
     private char eat(char expect) {
-        if (input.charAt(mark) != expect) {
-            throw new RuntimeException("Incorrect regex. Expected " + expect + " received " + peek() + ".");
-        }
+        assert input.charAt(mark) == expect : "Incorrect regex. Expected " + expect + " received " + peek() + ".";
         mark++;
         return expect;
     }
@@ -53,12 +51,12 @@ public class Skald implements SkaldComponent {
     }
 
     /* Reducing potentially overly complex regex */
-    public SkaldComponent reduce() {
+    public RegEx reduce() {
         return core.reduce();
     }
 
     /* General down-recurse regex structure building */
-    private SkaldComponent regex() {
+    private RegEx regex() {
         SkaldChoice opt = new SkaldChoice();
         opt.addChoice(term());
         while (hasMore() && peek() == '|') {
@@ -68,7 +66,7 @@ public class Skald implements SkaldComponent {
         return opt;
     }
     //regex|regex...
-    private SkaldComponent term() {
+    private RegEx term() {
         SkaldSequence sequence = new SkaldSequence();
         while (hasMore() && !(peek() == '|') && !(peek() == ')')) {
             sequence.add(factor());
@@ -76,8 +74,8 @@ public class Skald implements SkaldComponent {
         return sequence;
     }
     //regex*, regex+,{num,num}
-    private SkaldComponent factor() {
-        SkaldComponent base = base(true);
+    private RegEx factor() {
+        RegEx base = base(true);
         SkaldChoice tempChoice;
         SkaldSequence tempSeq;
         while (hasMore() && (peek() == '*' || peek() == '+' || peek() == '?' || peek() == '{')) {
@@ -166,19 +164,19 @@ public class Skald implements SkaldComponent {
         return base;
     }
     //[stuff here as a range],[^]
-    private SkaldComponent range() {
+    private RegEx range() {
         SkaldChoice opt = new SkaldChoice();
         boolean negate = false;
         if (peek() == '^') {
             eat('^');
             char[] data = alph.toCharArray();
             while (peek() != ']') {
-                SkaldComponent comp1 = base(false);
+                RegEx comp1 = base(false);
                 char head = ((SkaldPrim) comp1).PRIMITIVE;
                 data[alph.indexOf(head)] = 0;
                 if (peek() == '-') {
                     eat('-');
-                    SkaldComponent comp2 = base(false);
+                    RegEx comp2 = base(false);
                     char tail = ((SkaldPrim) comp2).PRIMITIVE;
                     if (alph.indexOf(head) > alph.indexOf(tail)) throw new RuntimeException("Illegal state of range start greater than range end.");
                     for (int i = alph.indexOf(head); i < alph.indexOf(tail); i++) {
@@ -209,8 +207,8 @@ public class Skald implements SkaldComponent {
         return opt;
     }
     //[], (), (?!), \c, ., (<=), (?=), (<!), (<=), ...
-    private SkaldComponent base(boolean complexAvail) {
-        SkaldComponent regex;
+    private RegEx base(boolean complexAvail) {
+        RegEx regex;
         switch (peek()) {
             case '[':
                 if (complexAvail) {
@@ -299,27 +297,27 @@ public class Skald implements SkaldComponent {
     public StringBuilder generateString() {
         return (new StringBuilder()).append(core.generateString());
     }
-    public Lausavisa generateNFA() {
+    public NFA generateNFA() {
         if (core == null) {
             return new Lausavisa();
         }
         return core.generateNFA();
     }
-    public SkaldComponent reverse() {
+    public RegEx reverse() {
         core.reverse();
         return this;
     }
 
-    public void setNFA(Lausavisa nfa) {
+    public void setNFA(NFA nfa) {
         this.nfa = nfa;
     }
-    public Lausavisa getNFA() {
+    public NFA getNFA() {
         return nfa;
     }
-    public void setDFA(Drottkvaett dfa) {
+    public void setDFA(DFA dfa) {
         this.dfa = dfa;
     }
-    public Drottkvaett getDFA() {
+    public DFA getDFA() {
         return dfa;
     }
 

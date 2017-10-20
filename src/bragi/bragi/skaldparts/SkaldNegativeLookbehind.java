@@ -1,16 +1,16 @@
 package bragi.bragi.skaldparts;
 
 import bragi.Lausavisa;
-import bragi.SkaldComponent;
-import bragi.bragi.skaldparts.SkaldNegativeLookahead;
+import bragi.NFA;
+import bragi.RegEx;
 
-public class SkaldNegativeLookbehind implements SkaldComponent {
-    private SkaldComponent internal;
-    public SkaldNegativeLookbehind(SkaldComponent regex) {
+public class SkaldNegativeLookbehind implements RegEx {
+    private RegEx internal;
+    public SkaldNegativeLookbehind(RegEx regex) {
         internal = regex;
     }
 
-    public SkaldComponent reduce() {
+    public RegEx reduce() {
         internal = internal.reduce();
         return (internal == null) ? (null) : (this);
     }
@@ -25,10 +25,10 @@ public class SkaldNegativeLookbehind implements SkaldComponent {
     public StringBuilder generateString() {
         return (new StringBuilder()).append("(?<!(").append(internal.generateString()).append("))");
     }
-    public Lausavisa generateNFA() {
+    public NFA generateNFA() {
         return new Lausavisa(true, true, internal.reverse().generateNFA().tablify().generateDFA());
     }
-    public SkaldComponent reverse() {
+    public RegEx reverse() {
         return new SkaldNegativeLookahead(internal.reverse());
     }
 }

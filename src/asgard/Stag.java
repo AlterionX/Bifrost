@@ -1,7 +1,9 @@
 package asgard;
 
+import config.PathHolder;
+import symtable.Nidhogg;
 import tagtable.TagTable;
-import yggdrasil.*;
+import ast.*;
 
 public abstract class Stag {
     protected final TagTable tagTable;

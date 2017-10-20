@@ -1,4 +1,4 @@
-package yggdrasil;
+package symtable;
 
 import java.util.*;
 

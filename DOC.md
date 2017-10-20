@@ -2,7 +2,7 @@
 
 Note the package names. Many classes are still unlisted.
 
-### Data management - AST and Symbol Table (yggdrasil) ###
+### Data management - AST and Symbol Table (ast) ###
 
 #### Yggdrasil ####
 

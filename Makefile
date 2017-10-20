@@ -3,7 +3,7 @@ all: run
 
 .PHONY:
 run: compile ./src/**/*.java
-	java -cp ./out/ yggdrasil.Yggdrasil
+	java -cp ./out/ Yggdrasil
 
 .PHONY:
 compile: ./src/**/*.java

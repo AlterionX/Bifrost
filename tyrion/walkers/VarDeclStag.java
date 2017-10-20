@@ -1,7 +1,9 @@
 import asgard.Stag;
+import config.PathHolder;
+import symtable.Nidhogg;
 import tagtable.TagPriority;
 import tagtable.TagTable;
-import yggdrasil.*;
+import ast.*;
 
 public class VarDeclStag extends Stag {
 

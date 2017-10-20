@@ -1,8 +1,8 @@
 package niflheim;
 
 import tagtable.TagTable;
-import yggdrasil.Leaf;
-import yggdrasil.PathHolder;
+import ast.Leaf;
+import config.PathHolder;
 
 public class NiflheimTester {
     public static void main(String[] args) {

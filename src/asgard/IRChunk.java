@@ -2,9 +2,8 @@ package asgard;
 
 import javafx.util.Pair;
 import tagtable.Tag;
-import yggdrasil.Branch;
-import yggdrasil.Nidhogg;
-import yggdrasil.Yggdrasil;
+import ast.Branch;
+import symtable.Nidhogg;
 
 import java.util.ArrayList;
 import java.util.LinkedList;

@@ -1,9 +1,10 @@
 package bragi.bragi.skaldparts;
 
 import bragi.Lausavisa;
-import bragi.SkaldComponent;
+import bragi.NFA;
+import bragi.RegEx;
 
-public class SkaldPrim implements SkaldComponent {
+public class SkaldPrim implements RegEx {
     private final boolean EMP;
     private final boolean DOT;
     public final char PRIMITIVE;
@@ -37,7 +38,7 @@ public class SkaldPrim implements SkaldComponent {
         SOF = false;
     }
 
-    public SkaldComponent reduce() {
+    public RegEx reduce() {
         return this;
     }
 
@@ -95,18 +96,18 @@ public class SkaldPrim implements SkaldComponent {
         }
         return sb;
     }
-    public Lausavisa generateNFA() {
+    public NFA generateNFA() {
         Lausavisa nfa = new Lausavisa(this);
         nfa.addStringToTerminal(this.generateString().toString());
         return nfa;
     }
-    public SkaldComponent reverse() {
+    public RegEx reverse() {
         return this;
     }
 
     public boolean equals(Object o) {
         //TODO utilize this to match parallel streams in the RegEx
-        return o instanceof SkaldComponent && o instanceof SkaldPrim && EMP == ((SkaldPrim) o).EMP && DOT == ((SkaldPrim) o).DOT && EOF == ((SkaldPrim) o).EOF && SOF == ((SkaldPrim) o).SOF && PRIMITIVE == ((SkaldPrim) o).PRIMITIVE;
+        return o instanceof RegEx && o instanceof SkaldPrim && EMP == ((SkaldPrim) o).EMP && DOT == ((SkaldPrim) o).DOT && EOF == ((SkaldPrim) o).EOF && SOF == ((SkaldPrim) o).SOF && PRIMITIVE == ((SkaldPrim) o).PRIMITIVE;
     }
     public int hashCode() {
         return EOF ? 258 : (SOF ? 257 : (EMP ? 256 : (DOT ? 257 : PRIMITIVE)));

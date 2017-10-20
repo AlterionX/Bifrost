@@ -4,9 +4,9 @@ import bragi.Skald;
 import javafx.util.Pair;
 import tagtable.Tag;
 import tagtable.TagTable;
-import yggdrasil.Cosmos;
+import ast.Cosmos;
 import tagtable.TagPriority;
-import yggdrasil.PathHolder;
+import config.PathHolder;
 
 import java.io.IOException;
 import java.nio.file.Files;

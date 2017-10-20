@@ -1,4 +1,4 @@
-package yggdrasil;
+package ast;
 
 import tagtable.Tag;
 
@@ -23,7 +23,7 @@ public class Leaf extends Branch implements Seedling {
     public void append() {
         throw new RuntimeException("Terminal cannot be appended to.");
     }
-    public void lrTraverse(TreeTraverser func, int level) {
+    public void lrTraverse(BranchProcessFunction func, int level) {
         func.processBranch(this, level);
     }
 

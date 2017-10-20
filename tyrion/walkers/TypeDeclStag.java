@@ -1,8 +1,8 @@
 import asgard.Stag;
 import tagtable.TagTable;
-import yggdrasil.Branch;
-import yggdrasil.Nidhogg;
-import yggdrasil.PathHolder;
+import ast.Branch;
+import symtable.Nidhogg;
+import config.PathHolder;
 import tagtable.TagPriority;
 
 public class TypeDeclStag extends Stag{

@@ -1,4 +1,4 @@
-package yggdrasil;
+package config;
 
 import java.io.IOException;
 import java.nio.file.Files;

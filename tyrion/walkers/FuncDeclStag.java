@@ -1,10 +1,10 @@
 import asgard.Stag;
 import tagtable.TagPriority;
 import tagtable.TagTable;
-import yggdrasil.Branch;
-import yggdrasil.Leaf;
-import yggdrasil.Nidhogg;
-import yggdrasil.PathHolder;
+import ast.Branch;
+import ast.Leaf;
+import symtable.Nidhogg;
+import config.PathHolder;
 
 public class FuncDeclStag extends Stag {
     private boolean inFunc = false;

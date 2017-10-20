@@ -1,7 +1,7 @@
 package ragnarok;
 
-import yggdrasil.Cosmos;
-import yggdrasil.Yggdrasil;
+import ast.Cosmos;
+import ast.Yggdrasil;
 
 import java.io.IOException;
 import java.util.ArrayList;

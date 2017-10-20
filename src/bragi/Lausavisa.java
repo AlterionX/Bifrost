@@ -4,11 +4,11 @@ import bragi.bragi.skaldparts.SkaldPrim;
 import javafx.util.Pair;
 import java.util.*;
 
-public class Lausavisa {
-    private Stef head;
-    private Stef terminal;
+public class Lausavisa implements NFA {
+    private FSANode head;
+    private FSANode terminal;
 
-    private Map<Stef, Map<SkaldPrim, ArrayList<Stef>>> table = null;
+    private Map<FSANode, Map<SkaldPrim, ArrayList<FSANode>>> table = null;
     private boolean tableIsStale = true;
 
     private static final String REGEX_TARG_ALPH = "\t\n\r !\"#$%&'()*+,-./" +
@@ -31,12 +31,10 @@ public class Lausavisa {
         terminal = shallowClone.terminal;
     }
     //Look around constructor
-    public Lausavisa(boolean negate, boolean reverse, Drottkvaett dfa) {
+    public Lausavisa(boolean negate, boolean reverse, DFA dfa) {
         head = new Stef();
         terminal = head;
-        head.visur.add(dfa);
-        head.negateLookAround.add(negate);
-        head.reverseLookAround.add(reverse);
+        head.addLookAround(dfa, negate, reverse);
     }
 
     public static final int SIMPLE_CONCAT = 0;
@@ -59,26 +57,26 @@ public class Lausavisa {
      *                 terminal of the second will be matched with the terminal of the first.
      * @return This NFA, having undergone these transformations
      */
-    public void merge(Lausavisa nfaTwo, int strategy) {
+    public void merge(NFA nfaTwo, int strategy) {
         tableIsStale = true;
         //System.out.println("Merging.");
         switch (strategy) {
             default:
             case SIMPLE_CONCAT:
-                this.terminal.registerConnection(nfaTwo.head, new SkaldPrim(true, false, false));
-                this.terminal = nfaTwo.terminal;
+                this.terminal.registerConnection(nfaTwo.getHead(), new SkaldPrim(true, false, false));
+                this.terminal = nfaTwo.getTerminals().iterator().next();
                 break;
             case SIMPLE_BRANCH:
                 this.head = new Stef(this.head, new SkaldPrim(true, false, false));
-                this.head.registerConnection(nfaTwo.head, new SkaldPrim(true, false, false));
-                Stef temp = new Stef();
+                this.head.registerConnection(nfaTwo.getHead(), new SkaldPrim(true, false, false));
+                FSANode temp = new Stef();
                 this.terminal.registerConnection(temp, new SkaldPrim(true, false, false));
-                nfaTwo.terminal.registerConnection(temp, new SkaldPrim(true, false, false));
+                nfaTwo.getTerminals().iterator().next().registerConnection(temp, new SkaldPrim(true, false, false));
                 this.terminal = temp;
                 break;
             case CONCAT_BRANCH:
-                this.head.registerConnection(nfaTwo.head, new SkaldPrim(true, false, false));
-                nfaTwo.terminal.registerConnection(this.terminal, new SkaldPrim(true, false, false));
+                this.head.registerConnection(nfaTwo.getHead(), new SkaldPrim(true, false, false));
+                nfaTwo.getTerminals().iterator().next().registerConnection(this.terminal, new SkaldPrim(true, false, false));
                 break;
         }
     }
@@ -90,11 +88,11 @@ public class Lausavisa {
      *
      * @return This NFA, having undergone these transformations
      */
-    public Lausavisa kleeneWrap() {
+    public NFA kleeneWrap() {
         tableIsStale = true;
         this.terminal.registerConnection(this.head, new SkaldPrim(true, false, false));
         this.head = new Stef(this.head, new SkaldPrim(true, false, false));
-        Stef nTerm = new Stef();
+        FSANode nTerm = new Stef();
         this.terminal.registerConnection(nTerm, new SkaldPrim(true, false, false));
         this.terminal = nTerm;
         this.head.registerConnection(this.terminal, new SkaldPrim(true, false, false));
@@ -107,7 +105,7 @@ public class Lausavisa {
      */
     public Lausavisa tablify() {
         if (!tableIsStale) return this;
-        ArrayList<Stef> nodes = new ArrayList<>();
+        ArrayList<FSANode> nodes = new ArrayList<>();
         table = new HashMap<>();
         //System.out.println("BFSing NFA.");
         this.bfs(nodes, table);
@@ -122,26 +120,26 @@ public class Lausavisa {
      * @param nodes The list of nodes to fill.
      * @param table The transition state table to fill.
      */
-    private void bfs(ArrayList<Stef> nodes, Map<Stef, Map<SkaldPrim, ArrayList<Stef>>> table) {
-        Stack<Stef> temp = new Stack<>();
+    private void bfs(ArrayList<FSANode> nodes, Map<FSANode, Map<SkaldPrim, ArrayList<FSANode>>> table) {
+        Stack<FSANode> temp = new Stack<>();
         temp.push(this.head);
-        Stack<Stef> next = new Stack<>();
+        Stack<FSANode> next = new Stack<>();
         int currIndex = 0;
 
         while (!temp.empty()) {
             //System.out.println("Current stack: " + temp);
-            Stef node = temp.empty() ? null : temp.peek();
+            FSANode node = temp.empty() ? null : temp.peek();
             while (node != null) {
-                if (node.mark == 0) {
-                    node.mark = 1;
-                    node.index = currIndex;
+                if (node.getScratch() == 0) {
+                    node.setScratch(1);
+                    node.setIndex(currIndex);
                     currIndex++;
                     nodes.add(node);
                     table.putIfAbsent(node, new HashMap<>());
 
-                    for (SkaldPrim cond : node.shiftMatrix.keySet()) {
+                    for (SkaldPrim cond : node.possibleInputs()) {
                         table.get(node).putIfAbsent(cond, new ArrayList<>());
-                        for (Stef node2 : node.shiftMatrix.get(cond)) {
+                        for (FSANode node2 : node.possibleTransitions(cond)) {
                             nodes.add(node2);
                             table.get(node).putIfAbsent(cond, new ArrayList<>());
 
@@ -152,40 +150,18 @@ public class Lausavisa {
                 }
                 node = temp.empty() ? null : temp.pop();
             }
-            Stack<Stef> stackFlop = temp;
+            Stack<FSANode> stackFlop = temp;
             temp = next;
             next = stackFlop;
         }
         //System.out.println("All nodes: " + nodes);
     }
     /**
-     * Prints the transition state table to the console.
-     */
-    public void printTable() {
-        if (tableIsStale) tablify();
-        System.out.println("/************************NFA STATE TABLE************************/");
-        for (Stef k : table.keySet()) {
-            System.out.println("Source state: " + k);
-            if (k.index == this.head.index) {
-                System.out.println("\tHEAD");
-            } else if (k.index == this.terminal.index){
-                System.out.println("\tTERMINAL");
-            }
-            for (SkaldPrim cond : table.get(k).keySet()) {
-                System.out.println("\tCondition: " + cond.generateString() + ", Target states: " + table.get(k).get(cond));
-                for (Stef node : table.get(k).get(cond)) {
-                    System.out.println("\t\t" + node + " Lookarounds: " +  node.visur.size());
-                }
-            }
-        }
-        System.out.println("/**********************NFA STATE TABLE END**********************/");
-    }
-    /**
      * Gets a shallow copy of the transition state table.
      *
      * @return The transition state table.
      */
-    public Map<Stef, Map<SkaldPrim, ArrayList<Stef>>> fetchTable() {
+    public Map<FSANode, Map<SkaldPrim, ArrayList<FSANode>>> getTransitionTable() {
         if (tableIsStale) tablify();
         return table;
     }
@@ -199,12 +175,12 @@ public class Lausavisa {
      *
      * @return The produced DFA
      */
-    public Drottkvaett generateDFA() {
+    public DFA generateDFA() {
         /* Prepare */
         if (tableIsStale) tablify();
-        Map<Stef, Pair<Set<Stef>, Map<SkaldPrim, Stef>>> dfaTable = new HashMap<>();
+        Map<FSANode, Pair<Set<FSANode>, Map<SkaldPrim, FSANode>>> dfaTable = new HashMap<>();
         /* Iteration one, head node */
-        Set<Stef> initial = closure(
+        Set<FSANode> initial = closure(
                 new HashSet<>(Collections.singletonList(this.head)),
                 new SkaldPrim(true, false, tableIsStale));
         initial.add(head);
@@ -213,8 +189,8 @@ public class Lausavisa {
         boolean complete = false;
         while (!complete) {
             complete = true;
-            for (Stef dfaNode : dfaTable.keySet()) {
-                if (dfaNode.mark == 0) {
+            for (FSANode dfaNode : dfaTable.keySet()) {
+                if (dfaNode.getScratch() == 0) {
                     processUnaryNode(dfaNode, dfaTable.get(dfaNode).getKey(), dfaTable);
                     complete = false;
                     break;
@@ -222,7 +198,7 @@ public class Lausavisa {
             }
         }
         /* Final creation of the DFA */
-        Drottkvaett dfa = new Drottkvaett();
+        DFA dfa = new Drapa();
         dfa.processNFADFAConversionTable(dfaTable, this.head, terminal);
         return dfa;
     }
@@ -233,24 +209,24 @@ public class Lausavisa {
      * @param nfaSub The NFA representation of the source node.
      * @param dfaTable The master NFA to DFA table.
      */
-    private void processUnaryNode(Stef dfaNode, Set<Stef> nfaSub,
-                                  Map<Stef, Pair<Set<Stef>, Map<SkaldPrim, Stef>>> dfaTable) {
+    private void processUnaryNode(FSANode dfaNode, Set<FSANode> nfaSub,
+                                  Map<FSANode, Pair<Set<FSANode>, Map<SkaldPrim, FSANode>>> dfaTable) {
         //Find all valid inputs to the DFA node
         Set<SkaldPrim> possibleVals = new HashSet<>();
-        for (Stef node : nfaSub) {
-            possibleVals.addAll(node.shiftMatrix.keySet());
+        for (FSANode node : nfaSub) {
+            possibleVals.addAll(node.possibleInputs());
         }
         //Remove useless empty transitions (all empty transitions at this point should be internal
         possibleVals.remove(new SkaldPrim(true, false, tableIsStale));
         //Analyze each path
         for (SkaldPrim prim : possibleVals) {
             //Simulate a move of type prim, followed by continuation to end
-            Set<Stef> nfaProgression = closure(nfaSub, prim);
+            Set<FSANode> nfaProgression = closure(nfaSub, prim);
             nfaProgression.addAll(closure(nfaProgression, new SkaldPrim(true, false, tableIsStale)));
             registerNFADFATransitionEntry(dfaTable, dfaNode, nfaProgression, prim);
         }
         //Mark the DFA node as processed, so do not lrConstruct again.
-        dfaNode.mark = 1;
+        dfaNode.setScratch(1);
     }
     /**
      * Marks an entry in the table from the provided DFA node to the DFA node represented by the set of NFA
@@ -262,15 +238,15 @@ public class Lausavisa {
      * @param prim The input.
      * @return The DFA node representation of the NFA node set.
      */
-    private void registerNFADFATransitionEntry(Map<Stef, Pair<Set<Stef>, Map<SkaldPrim, Stef>>> dfaTable,
-                                               Stef dfaNode, Set<Stef> nfaProgression,
+    private void registerNFADFATransitionEntry(Map<FSANode, Pair<Set<FSANode>, Map<SkaldPrim, FSANode>>> dfaTable,
+                                               FSANode dfaNode, Set<FSANode> nfaProgression,
                                                SkaldPrim prim) {
         //System.out.println("DFA Node " + dfaNode + ", with input " + prim.generateString() + ", connected to NFA node set " + nfaProgression);
         //Verify quality of nfaProgression set
-        for (Stef dfaModel : dfaTable.keySet()) {
+        for (FSANode dfaModel : dfaTable.keySet()) {
             if (nfaProgression.size() != dfaTable.get(dfaModel).getKey().size()) continue;
             boolean found = true;
-            for (Stef nfaElement : dfaTable.get(dfaModel).getKey()) {
+            for (FSANode nfaElement : dfaTable.get(dfaModel).getKey()) {
                 if (!nfaProgression.contains(nfaElement)) {
                     found = false;
                     break;
@@ -291,11 +267,11 @@ public class Lausavisa {
      * @param dfaTable The master NFA to DFA transformation table.
      * @return The node placed into the table.
      */
-    private Stef createNFADFATransitionNode(Set<Stef> nfaRepresentation,
-                                            Map<Stef, Pair<Set<Stef>, Map<SkaldPrim, Stef>>> dfaTable) {
+    private FSANode createNFADFATransitionNode(Set<FSANode> nfaRepresentation,
+                                               Map<FSANode, Pair<Set<FSANode>, Map<SkaldPrim, FSANode>>> dfaTable) {
         //System.out.println("Insertion of DFA node representing " + nfaRepresentation);
-        Stef nextNode = new Stef();
-        nextNode.index = dfaTable.size();
+        FSANode nextNode = new Stef();
+        nextNode.setIndex(dfaTable.size());
         dfaTable.put(nextNode, new Pair<>(nfaRepresentation, new HashMap<>()));
         return nextNode;
     }
@@ -308,9 +284,9 @@ public class Lausavisa {
      * @param dfaTable The master NFA to DFA transformation table
      * @return The destination node.
      */
-    private Stef markNFADFATransitionEntry(Stef dfaNode, Stef dfaModel, SkaldPrim prim,
-                                           Map<Stef, Pair<Set<Stef>, Map<SkaldPrim, Stef>>> dfaTable) {
-        Stef node = dfaTable.get(dfaNode).getValue().put(prim, dfaModel);
+    private FSANode markNFADFATransitionEntry(FSANode dfaNode, FSANode dfaModel, SkaldPrim prim,
+                                              Map<FSANode, Pair<Set<FSANode>, Map<SkaldPrim, FSANode>>> dfaTable) {
+        FSANode node = dfaTable.get(dfaNode).getValue().put(prim, dfaModel);
         if (node != null) throw new RuntimeException("One source state in a DFA cannot" +
                 " have multiple destinations under a single input.");
         return dfaModel;
@@ -323,28 +299,28 @@ public class Lausavisa {
      * @param prim The input value.
      * @return The set of nodes reached through the input
      */
-    private Set<Stef> closure(Set<Stef> headNodes, SkaldPrim prim) {
-        for (Stef node : table.keySet()) {
-            node.mark = 0;
+    private Set<FSANode> closure(Set<FSANode> headNodes, SkaldPrim prim) {
+        for (FSANode node : table.keySet()) {
+            node.setScratch(0);
         }
         //System.out.println("Finding closure of " + headNodes + " with input " + prim.generateString());
-        Set<Stef> nodeSet = new HashSet<>();
-        for (Stef node : headNodes) {
-            node.mark = 1;
-            if (node.shiftMatrix.containsKey(prim)) {
-                nodeSet.addAll(node.shiftMatrix.get(prim));
+        Set<FSANode> nodeSet = new HashSet<>();
+        for (FSANode node : headNodes) {
+            node.setScratch(1);
+            if (node.possibleInputs().contains(prim)) {
+                nodeSet.addAll(node.possibleTransitions(prim));
             }
         }
         //System.out.println("\tInitial processing located " + nodeSet);
         boolean done = false;
         while (!done) {
             done = true;
-            for (Stef node : nodeSet) {
-                if (node.mark == 0) {
+            for (FSANode node : nodeSet) {
+                if (node.getScratch() == 0) {
                     done = false;
-                    node.mark = 1;
-                    if (node.shiftMatrix.containsKey(prim)) {
-                        nodeSet.addAll(node.shiftMatrix.get(prim));
+                    node.setScratch(1);
+                    if (node.possibleInputs().contains(prim)) {
+                        nodeSet.addAll(node.possibleTransitions(prim));
                     }
                     break;
                 }
@@ -354,9 +330,21 @@ public class Lausavisa {
         return nodeSet;
     }
 
+    @Override
+    public FSANode getHead() {
+        return head;
+    }
+
+    @Override
+    public Set<FSANode> getTerminals() {
+        HashSet<FSANode> temp = new HashSet<>();
+        temp.add(terminal);
+        return temp;
+    }
+
     public ArrayList<Integer> process(String check, int start) {
-        Set<Stef> temp = new HashSet<>();
-        Set<Stef> next = new HashSet<>();
+        Set<FSANode> temp = new HashSet<>();
+        Set<FSANode> next = new HashSet<>();
         temp.add(head);
         ArrayList<Integer> success = new ArrayList<>();
         for (int i = start; i < check.length(); ++i) {
@@ -365,19 +353,29 @@ public class Lausavisa {
                 done = true;
                 temp.addAll(closure(temp, new SkaldPrim(true, false, false)));
             }
-            for (Stef node : temp) {
+            for (FSANode node : temp) {
                 if (node == terminal) success.add(i);
                 next.addAll(node.fetchNext(new SkaldPrim(check.charAt(i))));
             }
             //System.out.println("Next iteration: " + next);
             temp.clear();
-            Set<Stef> swap = next;
+            Set<FSANode> swap = next;
             next = temp;
             temp = swap;
         }
-        for (Stef node : temp) {
+        for (FSANode node : temp) {
             if (node == terminal) success.add(check.length());
         }
         return success;
+    }
+
+    @Override
+    public int processFirstReverse(String stream, int i) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public int processFirst(String stream, int currLoc) {
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 }

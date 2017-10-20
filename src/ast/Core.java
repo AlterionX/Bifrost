@@ -1,4 +1,4 @@
-package yggdrasil;
+package ast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +13,7 @@ public class Core implements Seedling {
     public void registerParent(Seedling seedling) {
         throw new RuntimeException("Cores have no parent but the tree of parent.");
     }
-    public void lrTraverse(TreeTraverser func, int level) {
+    public void lrTraverse(BranchProcessFunction func, int level) {
         System.out.println(this);
         internal.lrTraverse(func, level);
     }

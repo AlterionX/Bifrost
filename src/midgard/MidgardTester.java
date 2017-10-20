@@ -1,11 +1,11 @@
 package midgard;
 
+import config.PathHolder;
 import niflheim.Helvegar;
 import niflheim.NiflheimTester;
+import symtable.Nidhogg;
 import tagtable.TagTable;
-import yggdrasil.*;
-
-import java.util.Map;
+import ast.*;
 
 public class MidgardTester {
     public static void main(String[] args) {
@@ -17,39 +17,22 @@ public class MidgardTester {
 
         WorldTree tremp = new WorldTree() {
             @Override
-            public void launch() {
-
-            }
+            public void launch() {}
 
             @Override
-            public void addCore(Branch newCore) {
-
-            }
+            public void addCore(Branch newCore) {}
 
             @Override
-            public void printCores() {
-
-            }
+            public int getCoreCount() { return 0; }
 
             @Override
-            public int getCoreCount() {
-                return 0;
-            }
+            public Core getCore(int index) { return null; }
 
             @Override
-            public Core getCore(int index) {
-                return null;
-            }
+            public TagTable getTagTable() { return null; }
 
             @Override
-            public TagTable getTagTable() {
-                return null;
-            }
-
-            @Override
-            public Nidhogg getSymTable() {
-                return null;
-            }
+            public Nidhogg getSymTable() { return null; }
         };
 
         Jormungandr jormungandr = new Jormungandr(ph, tt, helvegar, tremp);
