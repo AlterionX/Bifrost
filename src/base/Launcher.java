@@ -1,3 +1,5 @@
+package base;
+
 import config.PathHolder;
 
 public interface Launcher {

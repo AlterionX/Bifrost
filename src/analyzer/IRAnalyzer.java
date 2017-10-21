@@ -2,7 +2,7 @@ package analyzer;
 
 import ast.AST;
 import ast.Branch;
-import ast.Cosmos;
+import base.Cosmos;
 import config.PathHolder;
 
 public abstract class IRAnalyzer extends Cosmos{

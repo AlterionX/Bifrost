@@ -2,8 +2,6 @@ package compiler;
 
 import ast.AST;
 import javafx.util.Pair;
-import tagtable.TagTable;
-import ast.Cosmos;
 import config.PathHolder;
 
 import java.io.BufferedWriter;

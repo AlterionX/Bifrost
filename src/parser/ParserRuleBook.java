@@ -1,7 +1,7 @@
 package parser;
 
 import ast.AST;
-import ast.Cosmos;
+import base.Cosmos;
 import config.PathHolder;
 
 public abstract class ParserRuleBook extends Cosmos {

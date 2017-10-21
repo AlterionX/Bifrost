@@ -4,8 +4,6 @@ import ast.AST;
 import regex.Skald;
 import javafx.util.Pair;
 import tagtable.Tag;
-import tagtable.TagTable;
-import ast.Cosmos;
 import tagtable.TagPriority;
 import config.PathHolder;
 

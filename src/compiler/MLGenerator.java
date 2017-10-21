@@ -1,9 +1,8 @@
 package compiler;
 
 import ast.AST;
-import ast.Cosmos;
+import base.Cosmos;
 import config.PathHolder;
-import tagtable.TagTable;
 
 public abstract class MLGenerator extends Cosmos {
     protected MLGenerator(PathHolder context, AST ast)  {

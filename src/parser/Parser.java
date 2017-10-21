@@ -1,9 +1,8 @@
 package parser;
 
 import ast.AST;
-import ast.Cosmos;
+import base.Cosmos;
 import config.PathHolder;
-import tagtable.TagTable;
 
 public abstract class Parser extends Cosmos {
     protected Parser(PathHolder context, AST ast)  {

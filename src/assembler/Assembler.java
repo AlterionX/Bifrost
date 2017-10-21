@@ -1,9 +1,8 @@
 package assembler;
 
 import ast.AST;
-import ast.Cosmos;
+import base.Cosmos;
 import config.PathHolder;
-import tagtable.TagTable;
 
 public abstract class Assembler extends Cosmos {
     protected Assembler(PathHolder context, AST ast)  {

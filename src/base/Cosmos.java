@@ -1,5 +1,6 @@
-package ast;
+package base;
 
+import ast.AST;
 import config.PathHolder;
 import symtable.SymTable;
 import tagtable.TagTable;

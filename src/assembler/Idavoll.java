@@ -1,8 +1,6 @@
 package assembler;
 
 import ast.AST;
-import ast.Cosmos;
-import ast.Yggdrasil;
 import config.PathHolder;
 
 import java.io.IOException;

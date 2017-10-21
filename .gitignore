@@ -1,5 +1,5 @@
-#ignore intellij files
+#Intellij
 .idea
-Bifrost.iml
+
+#Compiled files
 out/
-/tyrion/walkers/*.class
