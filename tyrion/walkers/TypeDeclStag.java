@@ -1,4 +1,5 @@
-import asgard.Stag;
+import analyzer.Stag;
+import symtable.SymTable;
 import tagtable.TagTable;
 import ast.Branch;
 import symtable.Nidhogg;
@@ -8,7 +9,7 @@ import tagtable.TagPriority;
 public class TypeDeclStag extends Stag{
     private static final int[] NATIVE_TYPE_SIZE = {8/*, 8, 8, 8*/};
     private static String[] NATIVE_TYPE_LIST = {"int"/*, "int_arr", "str", "str_arr"*/};
-    public TypeDeclStag(PathHolder pathHolder, TagTable tagTable, Nidhogg symTable) {
+    public TypeDeclStag(PathHolder pathHolder, TagTable tagTable, SymTable symTable) {
         super(tagTable, pathHolder, symTable, true);
     }
 

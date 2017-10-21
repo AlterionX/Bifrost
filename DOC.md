@@ -2,11 +2,11 @@
 
 Note the package names. Many classes are still unlisted.
 
-### Data management - AST and Symbol Table (ast) ###
+### AST (ast) ###
 
 #### Yggdrasil ####
 
-The AST structure of the parser. This is populated and modified during the parsing stage. It will be reference throughout the analytic stage.
+Stores the AST representation of the file. This is populated and modified throughout the parsing stage. It will be referenced throughout the analytic stage.
 
 The AST is the central class, as well, and is required by all the other classes.
 
@@ -14,7 +14,7 @@ The AST is the central class, as well, and is required by all the other classes.
 
 The symbol table of the parser. This is only populated after parsing, during the first analytic stage, and is paired with the AST.
 
-### RegEx Engine (bragi) ###
+### RegEx Engine (regex) ###
 
 This has a simple interface for RegEx verification, as well as matching RegEx expressions.
 
@@ -38,7 +38,7 @@ The NFA of the RegEx engine. A fitting name for the disconnectedness (or overcon
 
 The staple stanza of the Drapa, it is a series of states interspersed with computing. It holds the DFA that represents a RegEx and is generated from the NFA.
 
-### Lexer (niflheim) ###
+### Lexer (lexer) ###
 
 #### Hel ####
 
@@ -48,7 +48,7 @@ Hel manages the lexers, generating them and matching the input with the lexers, 
 
 The public face of the Lexer. All constructing from non-package sources will use Helvegar to produce the lexer.
 
-### Parser (midgard) ###
+### Parser (parser) ###
 
 #### Jormungandr ####
 
@@ -62,7 +62,7 @@ This manages the rules back end and generates the parsing tables. It will initia
 
 The managers of the tokenStream free language. While Skadi manages the traffic between the two and Jormungandr deals with the queries, this one does all the work.
 
-### Analyzer (asgard) ###
+### Analyzer (analyzer) ###
 
 #### Heimdallr ####
 
@@ -72,7 +72,7 @@ The guard of Asgard, this also checks the semantic meanings behind the provided 
 
 This being is said to have given meaning to man, and so will give meaning to the program. It traverses the AST, composing the final intermediate code. Optimization will also be dealt with by this Class.
 
-### Assembly generator (muspelheim) ###
+### Assembly generator (compiler) ###
 
 #### Surtr ####
 

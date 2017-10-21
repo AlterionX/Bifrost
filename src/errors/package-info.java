@@ -1,0 +1,2 @@
+// vanaheimr
+package errors;

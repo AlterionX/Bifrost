@@ -1,13 +1,14 @@
-import asgard.Stag;
+import analyzer.Stag;
 import config.PathHolder;
 import symtable.Nidhogg;
+import symtable.SymTable;
 import tagtable.TagPriority;
 import tagtable.TagTable;
 import ast.*;
 
 public class VarDeclStag extends Stag {
 
-    public VarDeclStag(PathHolder pathHolder, TagTable tagTable, Nidhogg symTable) {
+    public VarDeclStag(PathHolder pathHolder, TagTable tagTable, SymTable symTable) {
         super(tagTable, pathHolder, symTable, false);
     }
 

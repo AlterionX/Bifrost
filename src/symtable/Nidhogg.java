@@ -6,7 +6,7 @@ import java.util.Optional;
 /**
  * Symbol table.
  */
-public class Nidhogg {
+public class Nidhogg implements SymTable {
     private final Nastrond root;
     private Nastrond currentScope;
     public Nidhogg() {

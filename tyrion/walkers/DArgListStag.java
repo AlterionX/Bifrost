@@ -1,6 +1,7 @@
-import asgard.Stag;
+import analyzer.Stag;
 import config.PathHolder;
 import symtable.Nidhogg;
+import symtable.SymTable;
 import tagtable.TagPriority;
 import tagtable.TagTable;
 import ast.*;
@@ -10,7 +11,7 @@ public class DArgListStag extends Stag {
     int argNum = 0;
     int paramSize;
 
-    public DArgListStag(PathHolder pathHolder, TagTable tagTable, Nidhogg symTable, String lastFuncName) {
+    public DArgListStag(PathHolder pathHolder, TagTable tagTable, SymTable symTable, String lastFuncName) {
         super(tagTable, pathHolder, symTable, false);
         this.funcName = lastFuncName;
     }

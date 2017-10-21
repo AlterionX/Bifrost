@@ -1,4 +1,5 @@
-import asgard.Stag;
+import analyzer.Stag;
+import symtable.SymTable;
 import tagtable.TagPriority;
 import tagtable.TagTable;
 import ast.Branch;
@@ -12,7 +13,7 @@ public class FuncDeclStag extends Stag {
 
     private int suffix;
 
-    public FuncDeclStag(PathHolder pathHolder, TagTable tagTable, Nidhogg symTable) {
+    public FuncDeclStag(PathHolder pathHolder, TagTable tagTable, SymTable symTable) {
         super(tagTable, pathHolder, symTable, true);
     }
 

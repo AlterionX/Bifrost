@@ -1,11 +1,12 @@
-import asgard.Stag;
+import analyzer.Stag;
+import symtable.SymTable;
 import tagtable.TagTable;
 import ast.Branch;
 import symtable.Nidhogg;
 import config.PathHolder;
 
 public class ConstantifyStag extends Stag {
-    public ConstantifyStag(PathHolder pathHolder, TagTable tagTable, Nidhogg symTable) {
+    public ConstantifyStag(PathHolder pathHolder, TagTable tagTable, SymTable symTable) {
         super(tagTable, pathHolder, symTable, false);
     }
 
